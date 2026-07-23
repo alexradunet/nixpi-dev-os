@@ -1,0 +1,3 @@
+# Local test/runtime state — never commit
+node_modules/
+*.log
