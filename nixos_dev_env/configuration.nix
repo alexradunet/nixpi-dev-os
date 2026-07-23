@@ -22,16 +22,6 @@
       default = "";
       description = "Absolute path to a directory of pi extension subdirectories (each with an index.ts). Empty = disabled.";
     };
-    skillsPath = lib.mkOption {
-      type = lib.types.str;
-      default = "";
-      description = "Absolute path to a directory of pi skill subdirectories (each with a SKILL.md). Empty = disabled.";
-    };
-    rolesPath = lib.mkOption {
-      type = lib.types.str;
-      default = "";
-      description = "Absolute path to a directory of pi role files (each a *.md role). Empty = disabled.";
-    };
 
   };
 
@@ -168,34 +158,6 @@
             [ -f "$dir/index.ts" ] || continue
             name="$(basename "$dir")"
             ln -sfn "$dir" "$ext_dst/$name"
-          done
-        fi
-      '';
-
-      # Symlink all pi skills from nixpi.skillsPath into pi's global skills
-      # directory so they are available in every session.
-      system.userActivationScripts.pi-skills = lib.mkIf (cfg.skillsPath != "") ''
-        if [ "$USER" = "${cfg.username}" ]; then
-          skills_dst="$HOME/.pi/agent/skills"
-          mkdir -p "$skills_dst"
-          for dir in "${cfg.skillsPath}"/*/; do
-            [ -f "$dir/SKILL.md" ] || continue
-            name="$(basename "$dir")"
-            ln -sfn "$dir" "$skills_dst/$name"
-          done
-        fi
-      '';
-
-      # Symlink all pi roles from nixpi.rolesPath into pi's global agents
-      # directory so the subagent tool can resolve them in every repository.
-      system.userActivationScripts.pi-roles = lib.mkIf (cfg.rolesPath != "") ''
-        if [ "$USER" = "${cfg.username}" ]; then
-          roles_dst="$HOME/.pi/agent/agents"
-          mkdir -p "$roles_dst"
-          for file in "${cfg.rolesPath}"/*.md; do
-            [ -f "$file" ] || continue
-            name="$(basename "$file")"
-            ln -sfn "$file" "$roles_dst/$name"
           done
         fi
       '';
