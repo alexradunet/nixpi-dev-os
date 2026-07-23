@@ -16,6 +16,7 @@ import { spawn } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { Message } from "@earendil-works/pi-ai";
 import { StringEnum } from "@earendil-works/pi-ai";
@@ -29,6 +30,18 @@ import {
 import { Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import { type AgentConfig, type AgentScope, discoverAgents } from "./agents.ts";
+
+const EXTENSION_DIR = path.dirname(fileURLToPath(import.meta.url));
+const SKILLS_DIR = path.join(EXTENSION_DIR, "skills");
+const PLAYBOOK_PATH = path.join(EXTENSION_DIR, "AGENTS.md");
+
+function loadPlaybook(): string {
+	try {
+		return fs.readFileSync(PLAYBOOK_PATH, "utf-8");
+	} catch {
+		return "";
+	}
+}
 
 const MAX_PARALLEL_TASKS = 8;
 const MAX_CONCURRENCY = 4;
@@ -148,7 +161,7 @@ interface UsageStats {
 
 interface SingleResult {
 	agent: string;
-	agentSource: "user" | "project" | "unknown";
+	agentSource: "user" | "project" | "bundled" | "unknown";
 	task: string;
 	exitCode: number;
 	messages: Message[];
@@ -337,7 +350,7 @@ async function runSingleAgent(
 				cwd: cwd ?? defaultCwd,
 				shell: false,
 				stdio: ["ignore", "pipe", "pipe"],
-				env: { ...process.env, NIXPI_WORKER: "1" },
+				env: { ...process.env, NIXPI_WORKER: "1", NIXPI_SKILLS_DIR: SKILLS_DIR },
 			});
 			let buffer = "";
 
@@ -460,6 +473,18 @@ const SubagentParams = Type.Object({
 });
 
 export default function (pi: ExtensionAPI) {
+	const playbook = loadPlaybook();
+
+	// Skills and the playbook are served to every session, spawned workers
+	// included: workers need the methodology (their roles reference it). Only
+	// the spawner tool is worker-gated, so a worker can never re-register it
+	// (no nesting).
+	pi.on("resources_discover", () => ({ skillPaths: [SKILLS_DIR] }));
+	pi.on("before_agent_start", async (event) => {
+		if (!playbook) return;
+		return { systemPrompt: `${event.systemPrompt}\n\n${playbook}` };
+	});
+
 	// Nesting guard: workers are plain pi sessions and must not re-register the spawner tool.
 	if (process.env.NIXPI_WORKER === "1") return;
 	pi.registerTool({
