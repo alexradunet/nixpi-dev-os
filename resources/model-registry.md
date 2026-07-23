@@ -39,6 +39,8 @@ The orchestrator reads this file to recommend models for each task phase.
 | teach | mid | premium (for deep topics) |
 | janitor | budget | mid |
 
+Spawned phases (delegated via the `subagent` tool; model comes from the role's frontmatter): explore, plan, implement, review. In-session phases (run on the orchestrator's own model): grill, teach, janitor.
+
 ## Notes
 
 - As of 2026-07-23: `gpt-5.6-sol` has no quota. `qwen3.8-max-preview` (qwen-token-plan) is the global default and the effective top-tier model — recommend it wherever "premium" is called for until sol quota returns.
