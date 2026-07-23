@@ -171,7 +171,7 @@
       '';
 
       # Symlink all pi roles from nixpi.rolesPath into pi's global agents
-      # directory so herdr workers can resolve them in every repository.
+      # directory so the subagent tool can resolve them in every repository.
       system.userActivationScripts.pi-roles = lib.mkIf (cfg.rolesPath != "") ''
         if [ "$USER" = "${cfg.username}" ]; then
           roles_dst="$HOME/.pi/agent/agents"
