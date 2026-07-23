@@ -61,6 +61,23 @@ These apply to every project on this system. They are not style preferences — 
 ### Formatting
 - Use the language's default formatter (`nixfmt`, `gofmt`, `prettier`, `black`, `cargo fmt`). Don't discuss style beyond that.
 
+## Writing standards
+
+These apply to all prose: artifacts, commit messages, docs, reviews, PR descriptions.
+
+- Cut filler: "in order to" → "to", "due to the fact that" → "because". Delete "it is important to note that".
+- No clichés: "pushes the boundaries", "paradigm shift", "state of the art", "leverage". Use plain words.
+- Active voice when the agent is known. "The service logs errors" not "errors are logged by the service".
+- Concrete over abstract. Name the number, the file, the mechanism. Not "various factors".
+- Split sentences over 30 words. Vary length.
+- Bullets only for genuine lists. Prose when ideas connect by cause or argument.
+- No em dashes as casual punctuation. Use commas, colons, parentheses.
+- No "Additionally" / "Furthermore" / "Moreover" openers. Let content connect itself.
+- No summary closer on every paragraph. Trust the content.
+- Support claims with evidence. Never fabricate citations. Say "I don't know" over guessing.
+
+Escape hatch: *"Break any of these rules sooner than say anything outright barbarous."* (Orwell, 1946)
+
 ## Your job
 
 1. **Read the state.** Scan `projects/` for active work. Read frontmatter (`phase`, `status`) to understand where each project is in the pipeline.
