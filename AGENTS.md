@@ -19,6 +19,48 @@ Every decision in this repo is filtered through these principles, in priority or
 - **Decisions**: When two approaches are equally correct, pick the simpler one. Always.
 - **Reviews**: Flag violations of these principles. "Works but complex" is a review finding.
 
+## Code standards
+
+These apply to every project on this system. They are not style preferences — they are technical constraints that affect how well an agent can navigate, edit, and verify code.
+
+### Size
+- Functions: 4–20 lines. Split if longer.
+- Files: under 500 lines, ideally 200–300. Split by responsibility.
+- One thing per function, one responsibility per module.
+
+### Names
+- Specific and greppable. A name should return <5 hits with `rg`.
+- No generic names: `data`, `handler`, `process`, `Manager`, `Service`, `util`.
+
+### Comments
+- Write WHY, not WHAT. Skip `// increment counter` above `i++`.
+- Provenance comments are valuable: issue numbers, commit SHAs, upstream bugs, business constraints.
+- Don't strip comments during refactor — they carry intent for the next edit.
+- Docstrings on public functions: intent + one usage example.
+
+### Types
+- Explicit. No `any`, no untyped function signatures.
+- Nix modules: use `types.*` for every option. Scripts: validate inputs.
+
+### Structure
+- Early returns over nested ifs. Max 2 levels of indentation.
+- No code duplication. Extract shared logic into a function or module.
+- Inject dependencies through parameters, not globals or hardcoded imports.
+- Follow the framework's directory convention. Predictable paths.
+
+### Errors
+- Messages must include the offending value and expected shape.
+- Bad: `"invalid input"`. Good: `"invalid input: got '${x}', expected non-empty digit string"`.
+
+### Tests
+- Must run with a single command (documented in README or Makefile).
+- Must run headless: no manual DB seeds, no missing config, no secret credentials.
+- F.I.R.S.T: Fast, Independent, Repeatable, Self-Validating, Timely.
+- Every new function gets a test. Bug fixes get a regression test.
+
+### Formatting
+- Use the language's default formatter (`nixfmt`, `gofmt`, `prettier`, `black`, `cargo fmt`). Don't discuss style beyond that.
+
 ## Your job
 
 1. **Read the state.** Scan `projects/` for active work. Read frontmatter (`phase`, `status`) to understand where each project is in the pipeline.
@@ -120,4 +162,4 @@ This repo uses PARA:
 - Never run /janitor without the user explicitly asking.
 - Never skip the grill for a complex feature just because the user is excited. Recommend it. They can override.
 - Never add a dependency, service, or abstraction without justifying it against KISS/YAGNI. "Might be useful later" is not a justification.
-- Never leave dead config, commented-out blocks, or unused code in place. Delete it.
+- Never leave dead config, commented-out blocks, or unused code in place. Delete it. (This means dead code — not provenance comments. See Code standards → Comments.)
