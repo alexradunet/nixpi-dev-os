@@ -6,14 +6,14 @@ Self-hosted **development environment** for remote Pi-based development over SSH
 
 ```
 nixos_dev_env/                          NixOS system configuration (flake + modules)
-  flake.nix                             Pins nixpkgs, llm-agents (Pi), and Herdr
+  flake.nix                             Pins nixpkgs and llm-agents (Pi)
   configuration.nix                     SSH, fail2ban, firewall, user, locales, pi global-install
   hardware-configuration.nix            Host filesystems and kernel modules
 pi_skills/                              Orchestration skills: grill, explore, plan, implement, review, teach, janitor
 pi_extensions/                          Pi extensions
-  herdr-agents/                         Visible Herdr worker bridge Pi extension
-.pi/agents/                             Herdr worker roles (installed globally on rebuild; one per phase)
-.pi/skills -> ../pi_skills              Project symlink so a role's `skills:` field resolves
+  subagent/                             Subagent delegation tool (patched copy of pi's official example)
+.pi/agents/                             Subagent roles for spawnable phases (installed globally on rebuild)
+.pi/skills -> ../pi_skills              Project symlink so pi resolves orchestration skills in-session
 ```
 
 ## Access
@@ -38,10 +38,10 @@ cd /home/balaur/projects/nixpi-dev-os
 sudo nixos-rebuild switch --flake ./nixos_dev_env
 ```
 
-Update Pi and Herdr pins with:
+Update the Pi pin with:
 
 ```bash
-nix flake update llm-agents herdr --flake ./nixos_dev_env
+nix flake update llm-agents --flake ./nixos_dev_env
 sudo nixos-rebuild switch --flake ./nixos_dev_env
 ```
 
@@ -57,11 +57,12 @@ On every rebuild, the activation scripts in `nixos_dev_env/configuration.nix` (d
 
 Add a skill or extension under `pi_skills/` / `pi_extensions/` and rebuild; it is picked up automatically. The orchestration skills are user slash-commands (`/grill`, `/explore`, `/plan`, `/implement`, `/review`, `/teach`, `/janitor`); they carry `disable-model-invocation: true`, so they do not appear in the model's auto-invokable skill list.
 
-**Roles** (`.pi/agents/*.md`) are thin herdr worker wrappers, one per phase. They are installed **globally** too, so herdr workers can resolve them in every repository. herdr scans the global `~/.pi/agent/agents/` first and then the current directory's `.pi/agents/`, so a project-local role overrides a global role with the same name. A role's `skills: {name}` field resolves through the `.pi/skills -> ../pi_skills` symlink (herdr's skill resolver checks the project dirs `.pi/skills/` and `.agents/skills/`).
+**Roles** (`.pi/agents/*.md`) are subagent definitions, one per spawnable phase (explore, plan, implement, review). Frontmatter: `name`, `description`, `model`, `thinking`, `tools`. The `subagent` tool discovers them from the global `~/.pi/agent/agents/` directory and runs each delegation as a one-shot `pi` subprocess. In-session phases (grill, teach, janitor) have no role file; their skills are invoked directly.
 
 ## Testing
 
 ```bash
-node --test pi_extensions/herdr-agents/test/*.test.mjs
-node --check pi_extensions/herdr-agents/*.js
+pi -e ./pi_extensions/subagent/index.ts -p --no-session "Reply with exactly: ok"
 ```
+
+The extension is vendored from pi's official example with a small local patch (thinking levels, worker nesting guard); the real test is delegation itself.
