@@ -1,76 +1,8 @@
-# Closing the Loop — handoff, review, and plan maintenance
+# Closing the Loop — plan maintenance
 
-The advisor's job doesn't end at the plan. This file covers two follow-through flows: handing plans to visible workers for execution and review (`handoff`), and keeping the plan backlog alive (`reconcile`).
+The advisor's job doesn't end at the plan. This file covers two follow-through flows: keeping the plan backlog alive (`reconcile`) and publishing plans as GitHub issues (`--issues`).
 
-The founding rule survives unchanged: **the advisor never edits source code.** Implementation and review happen in separate visible workers that the human lead starts, steers, and closes manually.
-
----
-
-## Handoff — executing a plan with visible workers
-
-### Preconditions (check all before starting a worker)
-
-- The repo is a git repository (worktree isolation requires it). If not: stop and say so.
-- The plan file exists and its dependencies show DONE in `plans/README.md`. If not: stop, name the missing dependency.
-- Run the plan's drift check yourself. If in-scope files changed since `Planned at`, reconcile the plan first (see below) — don't hand a stale plan to a worker.
-
-### Start an implementer worker
-
-1. Create or confirm the worktree at the absolute path.
-2. Launch or focus a lead Pi session whose `ctx.cwd` is that exact assigned non-main worktree. Verify branch, worktree path, and clean status. `herdr_agent start` inherits the lead `ctx.cwd`.
-3. Start a fresh visible implementer: `herdr_agent start` with the `implementer` role (or `implementer-openai` as fallback). The call waits for interactive readiness and session identity, then returns a stable handle in `idle` state.
-4. Send the task with `herdr_agent prompt` using the handle, the full plan file text inlined, the absolute worktree path, and the executor preamble from the plan template. Prompt admission requires exact `idle` or `blocked` status.
-5. One focused plan per worker. Never give an implementer multiple plans or mixed tasks.
-
-### Monitor and steer
-
-- Use `herdr_agent status` to check progress.
-- Use `herdr_agent wait` to block until the worker reaches `idle`, `done`, or `blocked`.
-- While the worker is working, the human focuses the visible pane and steers or intervenes through the Pi UI (interrupt, corrective input when idle, `/model` and `/settings` as supported). `herdr_agent prompt` is admitted only from exact `idle` or `blocked` status; use `status`, `wait`, then `collect` for the result.
-- `blocked` is a settled actionable result — inspect it and decide whether to steer, retry, or abandon.
-
-### Collect and inspect
-
-- Use `herdr_agent collect` for the authoritative finalized result. This parses the Pi session JSONL after the latest accepted prompt boundary.
-- Use `herdr_agent read` only for diagnostic terminal output — it is not the finalized result.
-- Inspect the collected diff and verification evidence.
-
-### Start a reviewer worker
-
-1. Launch or focus a lead Pi session whose `ctx.cwd` is the exact assigned non-main worktree. Verify branch, worktree path, and clean status. `herdr_agent start` inherits the lead `ctx.cwd`.
-2. Start a separate visible reviewer: `herdr_agent start` with the appropriate reviewer role (e.g. `reviewer-sol` for Review A, `reviewer-glm` for Review B). The call waits for interactive readiness and session identity, then returns a stable handle in `idle` state.
-3. Send the review task with `herdr_agent prompt` using the handle, the full plan text, the worktree path or branch name, and the implementer's collected report. Prompt admission requires exact `idle` or `blocked` status.
-4. One focused review per worker. Reviewers do not see each other's output.
-5. Collect and inspect each review independently.
-
-### Revision cycles
-
-If reviews find fixable gaps:
-
-1. **Re-gate the worktree.** Launch or focus a lead Pi session whose `ctx.cwd` is the exact assigned non-main worktree. Verify branch, worktree path, and clean status. `herdr_agent start` inherits the lead `ctx.cwd`.
-2. Start a **fresh** implementer worker with the full issue, worktree path, actionable findings, and current diff.
-3. Do not resume a worker that has already completed — start a new one.
-4. Maximum two revision cycles, then stop and report blocked.
-
-Each revision cycle repeats the full ctx.cwd/worktree/branch/clean gate before the fresh implementer — the same gate as the initial handoff.
-
-### Verdict
-
-| Verdict | When | Action |
-|---|---|---|
-| **APPROVE** | Criteria pass, scope clean, quality holds | Update index status to DONE. Present to the user: diff summary, worktree path and branch. **Merging is the user's decision — never merge, push, or commit to their branch.** |
-| **REVISE** | Fixable gaps | Start a fresh implementer worker with specific, actionable feedback. **Max 2 revision rounds**, then BLOCK. |
-| **BLOCK** | STOP condition hit, scope violated unrecoverably, or revisions exhausted | Mark BLOCKED in the index with the reason. Refine or rewrite the plan with what was learned. Tell the user what happened and what changed in the plan. |
-
-### Manual close
-
-After collecting evidence and recording the verdict, close each worker pane manually. `herdr_agent close` is deliberately disabled — it reports the retained handle and pane for operator inspection. The human inspects the pane, confirms evidence is retained, then closes it.
-
-### Parallelism rules
-
-- Parallel workers are allowed only for independent read-only work (e.g. two reviewers) or separate worktrees.
-- Workers never edit the same checkout concurrently.
-- One focused task or finding per worker prompt.
+The founding rule survives unchanged: **the advisor never edits source code.** Implementation and review happen in spawned subagent workers (see `resources/subagent-orchestration.md`); merging stays the user's decision.
 
 ---
 

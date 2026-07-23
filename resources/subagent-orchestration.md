@@ -1,6 +1,6 @@
 # Subagent orchestration
 
-How this repo delegates autonomous work to spawned pi workers. Source: project `002-pi-orchestrator` (2026-07-24), which replaced an external `herdr` daemon with pi's own tooling.
+How this repo delegates autonomous work to spawned pi workers. Source: project `002-pi-orchestrator` (2026-07-24).
 
 ## The mechanism
 
