@@ -64,14 +64,9 @@ export default function (pi: ExtensionAPI) {
   function operational(handle: WorkerHandle) { if (!handle.sessionKind || !handle.sessionValue || ["starting", "error", "missing", "replaced"].includes(handle.status)) throw new Error(`worker ${handle.handleId} is not ready for operational actions`); }
 
   async function discoverRoles(cwd: string) {
-    const roles = new Map<string, { role: RoleConfig; filePath: string }>(); const errors = new Map<string, string>();
-    const globalAgentsDir = join(process.env.HOME || "~", ".pi", "agent", "agents");
-    const projectAgentsDir = resolve(cwd, ".pi", "agents");
-    // Global roles load first; project-local roles override by name.
-    for (const agentsDir of [globalAgentsDir, projectAgentsDir]) {
-      if (!existsSync(agentsDir)) continue;
-      for (const entry of await readdir(agentsDir)) if (entry.endsWith(".md")) { const filePath = join(agentsDir, entry); let name = entry.slice(0, -3); try { name = roleNameFromFilename(entry); roles.set(name, { role: parseRoleFile(await readFile(filePath, "utf8"), filePath), filePath }); } catch (error) { errors.set(name, boundedError(error)); } }
-    }
+    const roles = new Map<string, { role: RoleConfig; filePath: string }>(); const errors = new Map<string, string>(); const agentsDir = resolve(cwd, ".pi", "agents");
+    if (!existsSync(agentsDir)) return { roles, errors };
+    for (const entry of await readdir(agentsDir)) if (entry.endsWith(".md")) { const filePath = join(agentsDir, entry); let name = entry.slice(0, -3); try { name = roleNameFromFilename(entry); roles.set(name, { role: parseRoleFile(await readFile(filePath, "utf8"), filePath), filePath }); } catch (error) { errors.set(name, boundedError(error)); } }
     return { roles, errors };
   }
 

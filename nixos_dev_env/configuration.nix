@@ -22,11 +22,7 @@
       default = "";
       description = "Absolute path to a directory of pi skill subdirectories (each with a SKILL.md). Empty = disabled.";
     };
-    agentsPath = lib.mkOption {
-      type = lib.types.str;
-      default = "";
-      description = "Absolute path to a directory of herdr agent role files (*.md). Empty = disabled.";
-    };
+
   };
 
   config =
@@ -224,19 +220,6 @@
         fi
       '';
 
-      # Symlink herdr agent role files from nixpi.agentsPath into pi's global
-      # agents directory so they are discoverable in every project.
-      system.userActivationScripts.pi-agents = lib.mkIf (cfg.agentsPath != "") ''
-        if [ "$USER" = "${cfg.username}" ]; then
-          agents_dst="$HOME/.pi/agent/agents"
-          mkdir -p "$agents_dst"
-          for file in "${cfg.agentsPath}"/*.md; do
-            [ -f "$file" ] || continue
-            name="$(basename "$file")"
-            ln -sfn "$file" "$agents_dst/$name"
-          done
-        fi
-      '';
 
       system.stateVersion = "26.05";
     };
