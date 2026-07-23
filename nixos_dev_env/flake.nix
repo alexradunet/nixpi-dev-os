@@ -27,13 +27,16 @@
         system = "x86_64-linux";
         modules = [
           (
-            { pkgs, ... }:
+            { pkgs, config, ... }:
             let
               system = pkgs.stdenv.hostPlatform.system;
               herdrPackage = herdr.packages.${system}.default;
-              username = "nixpi";
             in
             {
+              # Instance-specific overrides
+              nixpi.username = "balaur";
+              nixpi.sshKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPOkyb6k2hdZHcP2gPb24NEroog7e26xA3IKGKkcv8qe u0_a478@localhost";
+
               environment.systemPackages = [
                 llm-agents.packages.${system}.pi
                 herdrPackage
@@ -42,7 +45,7 @@
               # Keep Herdr's Pi lifecycle/session integration in sync with the
               # pinned Herdr release. Preserve any user-customized config.
               system.userActivationScripts.herdr = ''
-                if [ "$USER" = "${username}" ]; then
+                if [ "$USER" = "${config.nixpi.username}" ]; then
                   config_dir="$HOME/.config/herdr"
                   config_file="$config_dir/config.toml"
                   mkdir -p "$config_dir"
