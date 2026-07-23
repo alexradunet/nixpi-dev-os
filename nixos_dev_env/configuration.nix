@@ -12,6 +12,21 @@
       default = "";
       description = "SSH public key for the primary user (empty = no key)";
     };
+    extensionsPath = lib.mkOption {
+      type = lib.types.str;
+      default = "";
+      description = "Absolute path to a directory of pi extension subdirectories (each with an index.ts). Empty = disabled.";
+    };
+    skillsPath = lib.mkOption {
+      type = lib.types.str;
+      default = "";
+      description = "Absolute path to a directory of pi skill subdirectories (each with a SKILL.md). Empty = disabled.";
+    };
+    agentsPath = lib.mkOption {
+      type = lib.types.str;
+      default = "";
+      description = "Absolute path to a directory of herdr agent role files (*.md). Empty = disabled.";
+    };
   };
 
   config =
@@ -180,6 +195,48 @@
         git
         gh
       ];
+
+      # Symlink all pi extensions from nixpi.extensionsPath into pi's global
+      # extensions directory so they are available in every session.
+      system.userActivationScripts.pi-extensions = lib.mkIf (cfg.extensionsPath != "") ''
+        if [ "$USER" = "${cfg.username}" ]; then
+          ext_dst="$HOME/.pi/agent/extensions"
+          mkdir -p "$ext_dst"
+          for dir in "${cfg.extensionsPath}"/*/; do
+            [ -f "$dir/index.ts" ] || continue
+            name="$(basename "$dir")"
+            ln -sfn "$dir" "$ext_dst/$name"
+          done
+        fi
+      '';
+
+      # Symlink all pi skills from nixpi.skillsPath into pi's global skills
+      # directory so they are available in every session.
+      system.userActivationScripts.pi-skills = lib.mkIf (cfg.skillsPath != "") ''
+        if [ "$USER" = "${cfg.username}" ]; then
+          skills_dst="$HOME/.pi/agent/skills"
+          mkdir -p "$skills_dst"
+          for dir in "${cfg.skillsPath}"/*/; do
+            [ -f "$dir/SKILL.md" ] || continue
+            name="$(basename "$dir")"
+            ln -sfn "$dir" "$skills_dst/$name"
+          done
+        fi
+      '';
+
+      # Symlink herdr agent role files from nixpi.agentsPath into pi's global
+      # agents directory so they are discoverable in every project.
+      system.userActivationScripts.pi-agents = lib.mkIf (cfg.agentsPath != "") ''
+        if [ "$USER" = "${cfg.username}" ]; then
+          agents_dst="$HOME/.pi/agent/agents"
+          mkdir -p "$agents_dst"
+          for file in "${cfg.agentsPath}"/*.md; do
+            [ -f "$file" ] || continue
+            name="$(basename "$file")"
+            ln -sfn "$file" "$agents_dst/$name"
+          done
+        fi
+      '';
 
       system.stateVersion = "26.05";
     };
