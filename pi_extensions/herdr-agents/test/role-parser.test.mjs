@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { filteredRoleTools, ORCHESTRATION_TOOLS, parseRoleFile, roleNameFromFilename, roleToPiArgs } from '../role-parser.js';
+import { discoverRoles, filteredRoleTools, ORCHESTRATION_TOOLS, parseRoleFile, roleNameFromFilename, roleToPiArgs } from '../role-parser.js';
 
 describe('role compatibility', () => {
   it('rejects every unsupported role key with its path and key name', () => {
@@ -49,5 +49,47 @@ describe('role compatibility', () => {
       '---\ndescription: bad\n----\nPrompt',
     ]) assert.throws(() => parseRoleFile(content, '/roles/delimiter.md'), /frontmatter delimiter|unterminated frontmatter/);
     assert.equal(parseRoleFile('\uFEFF---\r\ndescription: valid\r\n---\r\nPrompt', '/roles/crlf.md').description, 'valid');
+  });
+});
+
+describe('discoverRoles', () => {
+  const roleContent = (description) => `---\ndescription: ${description}\n---\nBody`;
+  const fakeIo = (files) => ({
+    existsSync: (dir) => Object.keys(files).some((p) => p.startsWith(dir + '/')),
+    readdir: async (dir) => Object.keys(files).filter((p) => p.startsWith(dir + '/')).map((p) => p.slice(dir.length + 1)),
+    readFile: async (path) => files[path],
+  });
+
+  it('merges directories in order so a later (project) dir overrides an earlier (global) one', async () => {
+    const globalDir = '/global/agents';
+    const projectDir = '/project/.pi/agents';
+    const io = fakeIo({
+      [`${globalDir}/plan.md`]: roleContent('global plan'),
+      [`${globalDir}/grill.md`]: roleContent('global grill'),
+      [`${projectDir}/plan.md`]: roleContent('project plan'),
+    });
+    const { roles, errors } = await discoverRoles([globalDir, projectDir], io);
+    assert.equal(roles.get('plan').role.description, 'project plan');
+    assert.equal(roles.get('plan').filePath, `${projectDir}/plan.md`);
+    assert.equal(roles.get('grill').role.description, 'global grill');
+    assert.equal(errors.size, 0);
+  });
+
+  it('skips missing directories', async () => {
+    const io = { existsSync: () => false, readdir: async () => ['role.md'], readFile: async () => roleContent('x') };
+    const { roles } = await discoverRoles(['/absent'], io);
+    assert.equal(roles.size, 0);
+  });
+
+  it('records a per-file parse error without aborting the remaining files', async () => {
+    const dir = '/agents';
+    const io = fakeIo({
+      [`${dir}/bad.md`]: '---\n---\nno description',
+      [`${dir}/good.md`]: roleContent('ok'),
+    });
+    const { roles, errors } = await discoverRoles([dir], io);
+    assert.equal(roles.get('good').role.description, 'ok');
+    assert.ok(errors.has('bad'));
+    assert.ok(!roles.has('bad'));
   });
 });

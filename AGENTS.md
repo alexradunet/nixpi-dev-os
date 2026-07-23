@@ -130,17 +130,24 @@ When the user opens a session:
    - Simple question → answer it directly.
 4. Wait for the user to confirm.
 
+## Skills and roles
+
+Two layers, kept separate:
+
+- **Skills** (`pi_skills/{name}/SKILL.md`) — the methodology for a phase, invoked as a slash command: `/grill`, `/explore`, `/plan`, `/implement`, `/review`, `/teach`, `/janitor`. Each pairs read-only discipline with an artifact contract.
+- **Roles** (`.pi/agents/{name}.md`) — thin herdr worker wrappers. A role sets `model`, `thinking`, `tools`, `prompt_mode`, and loads a skill via `skills: {name}`. The role is the wrapper; the skill is the brain.
+
+Skills, extensions, and roles are installed **globally** on rebuild: the activation scripts in `nixos_dev_env/configuration.nix` symlink `pi_skills/*`, `pi_extensions/*`, and `.pi/agents/*` into `~/.pi/agent/skills/`, `~/.pi/agent/extensions/`, and `~/.pi/agent/agents/`, so they are available in every repository. herdr's `start` action requires a role; it scans the global `~/.pi/agent/agents/` first and then the current directory's `.pi/agents/`, so a project-local role overrides a global one with the same name. The role's `skills:` field resolves the skill at `.pi/skills/{name}/SKILL.md` (the `.pi/skills -> ../pi_skills` symlink makes this resolve). Never embed a skill's methodology inside a role — that duplicates the skill and drifts.
+
 ## When the user says "go"
 
 1. Read `resources/model-registry.md` for the recommended model.
 2. Recommend the model based on task complexity:
-   - "I'd use gpt-5.6-sol (premium) for this grill — heavy architectural tradeoffs. OK?"
+   - "I'd use qwen3.8-max-preview (top tier) for this grill — heavy architectural tradeoffs. OK?"
 3. The user confirms or overrides.
-4. Spawn the herdr worker with:
-   - The appropriate skill loaded
-   - The project context (idea, prior artifacts, artifact path)
-   - The tool sandbox for that phase (read-only for grill/explore/plan/review; full for implement)
-5. Tell the user: "Grill pane is up. Switch to it when ready."
+4. Spawn the herdr worker via a **role** (`.pi/agents/{phase}.md`) that loads the phase's skill (`skills: {phase}`) and sets the model plus the tool sandbox for that phase (read-only for grill/explore/plan/review; full for implement). Then send it the project context (idea, prior artifacts, artifact path).
+5. Before spawning `implement`, confirm the plan and prior artifacts are **committed** — the implementer runs in a worktree and cannot read uncommitted files from the main checkout.
+6. Tell the user: "Grill pane is up. Switch to it when ready."
 
 ## When the user comes back
 

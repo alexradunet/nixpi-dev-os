@@ -1,13 +1,12 @@
 /** Balaur-owned visible Herdr worker bridge. */
-import { readFile, readdir } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
+import { homedir } from "node:os";
 import { Type } from "typebox";
 import { StringEnum } from "@earendil-works/pi-ai";
 import { truncateHead, formatSize, DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { HerdrClient, HerdrRemoteError, EXPECTED_PROTOCOL } from "./herdr-client.js";
-import { parseRoleFile, roleNameFromFilename, type RoleConfig } from "./role-parser.js";
+import { discoverRoles as discoverRolesInDirs } from "./role-parser.js";
 import { assertAgentIdentity, assertPinnedAgent, buildWorkerEnv, captureAgentIdentity, createPane, listAgents, makeAgentLabel, promptAgent, readAgent, removeRolePromptFile, reportPaneMetadata, startAgent, waitForAgent, waitForInteractiveReady, waitForSessionIdentity } from "./pane-manager.js";
 import { captureResolvedSessionBoundary, waitForFinalizedSessionResult, waitForPiSessionReference } from "./session-collector.js";
 import { classifyHandleInventory, createHandleStore, createHandle, deserializeStore, listHandles, reconcileHandles, serializeStore, type WorkerHandle } from "./handle-store.js";
@@ -64,10 +63,8 @@ export default function (pi: ExtensionAPI) {
   function operational(handle: WorkerHandle) { if (!handle.sessionKind || !handle.sessionValue || ["starting", "error", "missing", "replaced"].includes(handle.status)) throw new Error(`worker ${handle.handleId} is not ready for operational actions`); }
 
   async function discoverRoles(cwd: string) {
-    const roles = new Map<string, { role: RoleConfig; filePath: string }>(); const errors = new Map<string, string>(); const agentsDir = resolve(cwd, ".pi", "agents");
-    if (!existsSync(agentsDir)) return { roles, errors };
-    for (const entry of await readdir(agentsDir)) if (entry.endsWith(".md")) { const filePath = join(agentsDir, entry); let name = entry.slice(0, -3); try { name = roleNameFromFilename(entry); roles.set(name, { role: parseRoleFile(await readFile(filePath, "utf8"), filePath), filePath }); } catch (error) { errors.set(name, boundedError(error)); } }
-    return { roles, errors };
+    // Global roles first, project roles second: a project-local role overrides a global role with the same name.
+    return discoverRolesInDirs([resolve(homedir(), ".pi", "agent", "agents"), resolve(cwd, ".pi", "agents")]);
   }
 
   async function withHandleLease<T>(handleId: string | undefined, action: string, callback: () => Promise<T>): Promise<T> {

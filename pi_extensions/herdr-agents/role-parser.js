@@ -1,4 +1,8 @@
-/** Strict `.pi/agents/*.md` role parsing and safe Pi launch preparation. */
+/** Strict `.pi/agents/*.md` role parsing, discovery, and safe Pi launch preparation. */
+
+import { existsSync } from "node:fs";
+import { readFile, readdir } from "node:fs/promises";
+import { join } from "node:path";
 
 const ALLOWED_THINKING = new Set(['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max']);
 const ALLOWED_PROMPT_MODE = new Set(['replace', 'append']);
@@ -104,4 +108,36 @@ export function roleToPiArgs(role) {
   // protocol-17-safe argv transport while retaining replace/append semantics.
   if (role.prompt) args.push(role.prompt_mode === 'append' ? '--append-system-prompt' : '--system-prompt', role.prompt);
   return args;
+}
+
+const MAX_ERROR_BYTES = 500;
+function boundError(error) {
+  const text = error instanceof Error ? error.message : String(error);
+  return Buffer.byteLength(text) > MAX_ERROR_BYTES ? `${text.slice(0, MAX_ERROR_BYTES)}… [error truncated]` : text;
+}
+
+/**
+ * Discover roles from a list of agent directories, scanned in order. Later
+ * directories override earlier ones, so pass [global, project] to let a
+ * project-local role win over a global role with the same name. `io` is
+ * injectable for tests and defaults to the real filesystem.
+ */
+export async function discoverRoles(agentsDirs, io = { existsSync, readdir, readFile }) {
+  const roles = new Map();
+  const errors = new Map();
+  for (const agentsDir of agentsDirs) {
+    if (!io.existsSync(agentsDir)) continue;
+    for (const entry of await io.readdir(agentsDir)) {
+      if (!entry.endsWith('.md')) continue;
+      const filePath = join(agentsDir, entry);
+      let name = entry.slice(0, -3);
+      try {
+        name = roleNameFromFilename(entry);
+        roles.set(name, { role: parseRoleFile(await io.readFile(filePath, 'utf8'), filePath), filePath });
+      } catch (error) {
+        errors.set(name, boundError(error));
+      }
+    }
+  }
+  return { roles, errors };
 }

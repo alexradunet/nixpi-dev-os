@@ -41,6 +41,7 @@
               ];
               nixpi.extensionsPath = "/home/balaur/projects/nixpi-dev-os/pi_extensions";
               nixpi.skillsPath = "/home/balaur/projects/nixpi-dev-os/pi_skills";
+              nixpi.rolesPath = "/home/balaur/projects/nixpi-dev-os/.pi/agents";
 
               environment.systemPackages = [
                 llm-agents.packages.${system}.pi

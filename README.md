@@ -7,10 +7,13 @@ Self-hosted **development environment** for remote Pi-based development over SSH
 ```
 nixos_dev_env/                          NixOS system configuration (flake + modules)
   flake.nix                             Pins nixpkgs, llm-agents (Pi), and Herdr
-  configuration.nix                     SSH, fail2ban, firewall, user, locales
+  configuration.nix                     SSH, fail2ban, firewall, user, locales, pi global-install
   hardware-configuration.nix            Host filesystems and kernel modules
-pi_extensions/                          Pi extensions (auto-discovered)
+pi_skills/                              Orchestration skills: grill, explore, plan, implement, review, teach, janitor
+pi_extensions/                          Pi extensions
   herdr-agents/                         Visible Herdr worker bridge Pi extension
+.pi/agents/                             Herdr worker roles (installed globally on rebuild; one per phase)
+.pi/skills -> ../pi_skills              Project symlink so a role's `skills:` field resolves
 ```
 
 ## Access
@@ -42,15 +45,19 @@ nix flake update llm-agents herdr --flake ./nixos_dev_env
 sudo nixos-rebuild switch --flake ./nixos_dev_env
 ```
 
-## Installing the Pi extensions
+## Skills, extensions, and roles (pi discovery)
 
-Pi auto-discovers extensions from the conventional `pi_extensions/` directory when this repository is installed as a Pi git package:
+The orchestration is installed **globally** so it is available in every repository — e.g. opening pi in `../balaur` gives the orchestration skills plus balaur's own skills.
 
-```bash
-pi install git:github.com/alexradunet/nixpi-dev-os@<ref>
-```
+On every rebuild, the activation scripts in `nixos_dev_env/configuration.nix` (driven by `nixpi.skillsPath` / `nixpi.extensionsPath` in `flake.nix`) symlink the sources into pi's global instance:
 
-After the project is trusted, `herdr_agent` (visible Herdr worker bridge) becomes available.
+- `pi_skills/*` → `~/.pi/agent/skills/*`
+- `pi_extensions/*` → `~/.pi/agent/extensions/*`
+- `.pi/agents/*` → `~/.pi/agent/agents/*`
+
+Add a skill or extension under `pi_skills/` / `pi_extensions/` and rebuild; it is picked up automatically. The orchestration skills are user slash-commands (`/grill`, `/explore`, `/plan`, `/implement`, `/review`, `/teach`, `/janitor`); they carry `disable-model-invocation: true`, so they do not appear in the model's auto-invokable skill list.
+
+**Roles** (`.pi/agents/*.md`) are thin herdr worker wrappers, one per phase. They are installed **globally** too, so herdr workers can resolve them in every repository. herdr scans the global `~/.pi/agent/agents/` first and then the current directory's `.pi/agents/`, so a project-local role overrides a global role with the same name. A role's `skills: {name}` field resolves through the `.pi/skills -> ../pi_skills` symlink (herdr's skill resolver checks the project dirs `.pi/skills/` and `.agents/skills/`).
 
 ## Testing
 

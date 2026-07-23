@@ -46,7 +46,7 @@ Write your review artifact with a clear verdict.
 
 ## Artifact
 
-**Path:** `projects/{project-id}/reviews/review-{YYYY-MM-DD}.md`
+**Path:** `projects/{project-id}/review-{YYYY-MM-DD}.md`
 
 **Format:**
 
