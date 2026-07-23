@@ -2,7 +2,7 @@
 name: plan
 description: "Produces self-contained, executable implementation plans from any input: grill summaries (features), explore findings (bug fixes), codebase audits, or direct requests. The plan is the product — written for the weakest plausible executor. Strictly read-only on source code."
 disable-model-invocation: true
-argument-hint: "What should I plan? (or: audit, quick, deep, branch, next, plan <description>, review-plan <file>, reconcile)"
+argument-hint: "What should I plan? (or: audit, quick, deep, branch, next, plan <description>, review-plan <file>, reconcile, --issues)"
 ---
 
 # Plan
@@ -111,6 +111,7 @@ End the plan artifact with a "Next step" section:
 - `plan <description>` → skip audit, investigate and write a single plan.
 - `review-plan <file>` → critique an existing plan against the template's standards.
 - `reconcile` → verify DONE plans, investigate BLOCKED ones, refresh drifted TODOs. See [references/closing-the-loop.md](references/closing-the-loop.md).
+- `--issues` → modifier on any planning invocation; publish the resulting plans as GitHub issues. The flag is the user's explicit authorization to create issues; never create them without it. See [references/closing-the-loop.md](references/closing-the-loop.md).
 
 ## Tone
 
