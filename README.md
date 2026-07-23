@@ -1,31 +1,41 @@
 # nixpi-dev-os
 
-The self-hosted **development environment** for remote Pi-based development: the NixOS configuration that provisions the development host and the project-local Pi extensions that support remote development over NetBird. This repository is intentionally separate from any application repository so that the application stays decoupled from the machine and tooling that develop it.
-
-Extracted from `alexradunet/balaur` at commit `3fa7e2a` on 2026-07-23. The application repository retains its own history of these files; this repository starts a focused history for the environment.
+Self-hosted **development environment** for remote Pi-based development over SSH. NixOS configuration, Pi extensions, and orchestration tooling — intentionally separate from any application repository.
 
 ## Layout
 
 ```
 nixos_dev_env/                          NixOS system configuration (flake + modules)
   flake.nix                             Pins nixpkgs, llm-agents (Pi), and Herdr
-  configuration.nix                     NetBird, Caddy HTTPS, user, locales
+  configuration.nix                     SSH, fail2ban, firewall, user, locales
   hardware-configuration.nix            Host filesystems and kernel modules
-  netbird-setup-key.example             Enrollment placeholder (copy, never commit a real key)
-extensions/                             Pi package conventional directory (auto-discovered)
-  nixpi-netbird/                        Closed, TUI-confirmed NetBird Cloud Pi extension
+pi_extensions/                          Pi extensions (auto-discovered)
   herdr-agents/                         Visible Herdr worker bridge Pi extension
-docs/adr/0003-netbird-pi-extension.md   ADR for the NetBird extension's security boundaries
+```
+
+## Access
+
+SSH is the single entry point. Port `22222`, key-only auth, fail2ban protected.
+
+```bash
+ssh -p 22222 balaur@<host-ip>
+```
+
+Port forwarding for services:
+
+```bash
+ssh -p 22222 -L 8080:localhost:8080 balaur@<host-ip>   # local forward
+ssh -p 22222 -R 9090:localhost:3000 balaur@<host-ip>   # remote forward
 ```
 
 ## Applying the NixOS configuration
 
 ```bash
-cd /home/nixpi/projects/nixpi-dev-os
+cd /home/balaur/projects/nixpi-dev-os
 sudo nixos-rebuild switch --flake ./nixos_dev_env
 ```
 
-This installs Pi and Herdr system-wide, starts NetBird and Caddy, and creates the protected `/etc/nixpi/netbird.env` file (empty). Update Pi and Herdr pins with:
+Update Pi and Herdr pins with:
 
 ```bash
 nix flake update llm-agents herdr --flake ./nixos_dev_env
@@ -34,40 +44,17 @@ sudo nixos-rebuild switch --flake ./nixos_dev_env
 
 ## Installing the Pi extensions
 
-Pi auto-discovers both extensions from the conventional `extensions/` directory when this repository is installed as a Pi git package. Install it globally so the tools are available in any trusted project on this host:
+Pi auto-discovers extensions from the conventional `pi_extensions/` directory when this repository is installed as a Pi git package:
 
 ```bash
 pi install git:github.com/alexradunet/nixpi-dev-os@<ref>
 ```
 
-Or install it project-locally inside any trusted project checkout (written to `.pi/git/`):
-
-```bash
-cd /path/to/your/project
-pi install -l git:github.com/alexradunet/nixpi-dev-os@<ref>
-```
-
-After the project is trusted, Pi loads the extensions and these commands and tools become available:
-
-- `/netbird` and `/netbird doctor` (NetBird dashboard and readiness check)
-- `netbird_inspect` and `netbird_configure` (closed NetBird Cloud read/mutate tools)
-- `herdr_agent` (visible Herdr worker bridge)
-
-The `herdr_agent` extension reads worker roles from the project checkout's `.pi/agents/*.md` and skills from `.pi/skills/`; only the orchestration mechanism lives here. See `docs/adr/0003-netbird-pi-extension.md` and `extensions/nixpi-netbird/README.md` for the security model.
-
-## NetBird service-user credential
-
-The NetBird extension reads its Personal Access Token on demand from `/etc/nixpi/netbird.env`, a non-symlink regular file owned by `root:nixpi-secrets` with mode `0640` that the NixOS configuration creates empty. A human operator creates a dedicated NetBird **service user** with the **Network Admin** role, creates a PAT for it, and installs the token with `sudoedit`. The token is never placed in this repository, the Nix store, a systemd environment, an issue, a chat, or a Pi session. See `extensions/nixpi-netbird/README.md` for the full rotation procedure.
+After the project is trusted, `herdr_agent` (visible Herdr worker bridge) becomes available.
 
 ## Testing
 
-The extensions use only Node built-ins and Pi-provided packages and introduce no package manifest or dependency install.
-
 ```bash
-node --test extensions/nixpi-netbird/*.test.mjs
-node --test extensions/herdr-agents/test/*.test.mjs
-node --check extensions/nixpi-netbird/*.mjs
-node --check extensions/herdr-agents/*.js
+node --test pi_extensions/herdr-agents/test/*.test.mjs
+node --check pi_extensions/herdr-agents/*.js
 ```
-
-The `herdr-agents` role-parser suite is fully self-contained and does not depend on any external project checkout.

@@ -7,10 +7,10 @@
       default = "nixpi";
       description = "Primary user account name";
     };
-    sshKey = lib.mkOption {
-      type = lib.types.str;
-      default = "";
-      description = "SSH public key for the primary user (empty = no key)";
+    sshKeys = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [];
+      description = "SSH public keys for the primary user";
     };
     extensionsPath = lib.mkOption {
       type = lib.types.str;
@@ -35,76 +35,30 @@
 
       networking.hostName = "nixos";
       networking.networkmanager.enable = true;
-      # Remote browsers must use HTTPS: WebCrypto is withheld from plain HTTP
-      # non-localhost origins.
-      networking.firewall.interfaces.netbird0.allowedTCPPorts = [
-        443
-        2222
-      ];
+      networking.firewall.allowedTCPPorts = [ 22222 ];
 
-      # Native OpenSSH uses a separate NetBird-only port so Android clients such as
-      # Termux do not collide with NetBird's embedded SSH interception on port 22.
       services.openssh = {
         enable = true;
         openFirewall = false;
-        ports = [ 2222 ];
+        ports = [ 22222 ];
         settings = {
           KbdInteractiveAuthentication = false;
           PasswordAuthentication = false;
           PermitRootLogin = "no";
           X11Forwarding = false;
+          AllowTcpForwarding = "yes";
+          MaxAuthTries = 3;
+          LoginGraceTime = 30;
+          ClientAliveInterval = 300;
+          ClientAliveCountMax = 2;
         };
       };
 
-      services.netbird.clients.default = {
-        name = "netbird";
-        interface = "netbird0";
-        port = 51820;
-        hardened = false;
-        config = {
-          ServerSSHAllowed = true;
-          DisableSSHAuth = false;
-          EnableSSHRoot = true;
-          EnableSSHSFTP = false;
-          EnableSSHLocalPortForwarding = false;
-          EnableSSHRemotePortForwarding = false;
-        };
-        login = {
-          enable = true;
-          setupKeyFile = "/etc/netbird/setup-key";
-        };
-      };
-
-      # The setup key is needed only for initial enrollment, not normal startup.
-      systemd.services.netbird-login.unitConfig.ConditionPathExists = "/etc/netbird/setup-key";
-
-      services.caddy = {
+      services.fail2ban = {
         enable = true;
-        # Client devices trust this CA explicitly; the sandboxed Caddy service must
-        # not try (and fail) to modify the development host's system trust store.
-        globalConfig = "skip_install_trust";
-        virtualHosts."nixos.netbird.cloud".extraConfig = ''
-          tls internal
-
-          # The root certificate is public material. Serving it here gives a new
-          # NetBird client a bounded bootstrap path; the CA private key remains in
-          # Caddy's protected state directory.
-          handle /nixpi-dev-ca.crt {
-            root * /var/lib/caddy/.local/share/caddy/pki/authorities/local
-            rewrite * /root.crt
-            header Content-Type application/x-x509-ca-cert
-            header Content-Disposition "attachment; filename=nixpi-dev-ca.crt"
-            file_server
-          }
-
-          handle {
-            reverse_proxy 127.0.0.1:8080
-          }
-        '';
-      };
-
-      systemd.services.caddy = {
-        after = [ "netbird.service" ];
+        maxretry = 3;
+        bantime = "1h";
+        ignoreIP = [ "127.0.0.1/8" ];
       };
 
       time.timeZone = "Europe/Bucharest";
@@ -127,25 +81,16 @@
         variant = "";
       };
 
-      users.groups."${cfg.username}-secrets" = { };
-
       users.users.${cfg.username} = {
         isNormalUser = true;
         description = cfg.username;
-        openssh.authorizedKeys.keys =
-          lib.mkIf (cfg.sshKey != "") [ cfg.sshKey ];
+        openssh.authorizedKeys.keys = cfg.sshKeys;
         extraGroups = [
-          "${cfg.username}-secrets"
           "networkmanager"
           "wheel"
         ];
         packages = with pkgs; [ ];
       };
-
-      systemd.tmpfiles.rules = [
-        "d /etc/${cfg.username} 0750 root ${cfg.username}-secrets - -"
-        "f /etc/${cfg.username}/netbird.env 0640 root ${cfg.username}-secrets - -"
-      ];
 
       security.sudo.wheelNeedsPassword = false;
 
@@ -219,7 +164,6 @@
           done
         fi
       '';
-
 
       system.stateVersion = "26.05";
     };
