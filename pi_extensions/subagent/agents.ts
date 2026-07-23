@@ -6,6 +6,8 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { CONFIG_DIR_NAME, getAgentDir, parseFrontmatter } from "@earendil-works/pi-coding-agent";
 
+const ALLOWED_THINKING_LEVELS = new Set(["off", "minimal", "low", "medium", "high", "xhigh", "max"]);
+
 export type AgentScope = "user" | "project" | "both";
 
 export interface AgentConfig {
@@ -13,6 +15,7 @@ export interface AgentConfig {
 	description: string;
 	tools?: string[];
 	model?: string;
+	thinking?: string;
 	systemPrompt: string;
 	source: "user" | "project";
 	filePath: string;
@@ -60,11 +63,17 @@ function loadAgentsFromDir(dir: string, source: "user" | "project"): AgentConfig
 			.map((t: string) => t.trim())
 			.filter(Boolean);
 
+		const thinking = frontmatter.thinking?.trim();
+		if (thinking && !ALLOWED_THINKING_LEVELS.has(thinking)) {
+			throw new Error(`${filePath}: invalid thinking level '${thinking}'; allowed: ${[...ALLOWED_THINKING_LEVELS].join(", ")}`);
+		}
+
 		agents.push({
 			name: frontmatter.name,
 			description: frontmatter.description,
 			tools: tools && tools.length > 0 ? tools : undefined,
 			model: frontmatter.model,
+			thinking: thinking || undefined,
 			systemPrompt: body,
 			source,
 			filePath,
