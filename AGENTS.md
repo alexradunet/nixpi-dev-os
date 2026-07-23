@@ -97,7 +97,7 @@ Not every project follows the full pipeline:
 - **New feature / heavy refactor:** grill → plan → implement → review
 - **Bug:** explore → plan (fix) → implement → review
 - **Trivial fix:** just fix it in-session. No project folder, no spawn.
-- **Audit / improvement:** improve (audit mode) → plan → implement → review
+- **Audit / improvement:** plan (audit mode) → implement → review
 - **Learning:** teach (in-session or spawned)
 
 ## Decision threshold

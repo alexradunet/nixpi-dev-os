@@ -1,6 +1,6 @@
 ---
-name: improve
-description: "Unified planning skill. Produces self-contained, executable implementation plans from any input: grill summaries (features), explore findings (bug fixes), codebase audits (improvements), or direct requests. The plan is the product — written for the weakest plausible executor. Strictly read-only on source code."
+name: plan
+description: "Produces self-contained, executable implementation plans from any input: grill summaries (features), explore findings (bug fixes), codebase audits, or direct requests. The plan is the product — written for the weakest plausible executor. Strictly read-only on source code."
 disable-model-invocation: true
 argument-hint: "What should I plan? (or: audit, quick, deep, branch, next, plan <description>, review-plan <file>, reconcile)"
 ---
