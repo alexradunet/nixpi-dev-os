@@ -72,7 +72,7 @@ node --check extensions/nixpi-netbird/presenters.mjs
 
 ## Layout and loading
 
-This repository is the NixPi self-hosted development environment, extracted from the [`alexradunet/balaur`](https://github.com/alexradunet/balaur) application repository to keep the application separate from its environment. The extension lives at `extensions/nixpi-netbird/`; the NixOS configuration that provisions its protected credential file lives at `nixos_dev_env/`.
+The extension lives at `extensions/nixpi-netbird/`; the NixOS configuration that provisions its protected credential file lives at `nixos_dev_env/`.
 
 Pi auto-discovers this extension from the conventional `extensions/` directory when the repository is installed as a Pi git package:
 
@@ -80,7 +80,7 @@ Pi auto-discovers this extension from the conventional `extensions/` directory w
 pi install git:github.com/alexradunet/nixpi-dev-os@<ref>
 ```
 
-Install it globally (`~/.pi/agent/git/`) or project-locally in the application checkout (`-l`, `.pi/git/`). After the project is trusted, Pi loads the extension and the `/netbird`, `/netbird doctor`, `netbird_inspect`, and `netbird_configure` commands and tools become available. The extension reads the NetBird API token on demand from `/etc/nixpi/netbird.env`, which the NixOS configuration creates as an empty protected file; it never appears in this repository.
+Install it globally (`~/.pi/agent/git/`) or project-locally (`-l`, `.pi/git/`). After the project is trusted, Pi loads the extension and the `/netbird`, `/netbird doctor`, `netbird_inspect`, and `netbird_configure` commands and tools become available. The extension reads the NetBird API token on demand from `/etc/nixpi/netbird.env`, which the NixOS configuration creates as an empty protected file; it never appears in this repository.
 
 ## Official references
 

@@ -6,8 +6,8 @@
 
   networking.hostName = "nixos";
   networking.networkmanager.enable = true;
-  # Remote browsers must use HTTPS: the app's canonical-vault hashing depends
-  # on WebCrypto, which browsers withhold from plain HTTP non-localhost origins.
+  # Remote browsers must use HTTPS: WebCrypto is withheld from plain HTTP
+  # non-localhost origins.
   networking.firewall.interfaces.netbird0.allowedTCPPorts = [
     443
     2222
@@ -75,36 +75,7 @@
   };
 
   systemd.services.caddy = {
-    after = [ "nixpi-dev.service" "netbird.service" ];
-    wants = [ "nixpi-dev.service" ];
-  };
-
-  systemd.services.nixpi-dev = {
-    description = "Nazar development server with live reload";
-    after = [ "network-online.target" "netbird.service" ];
-    wants = [ "network-online.target" ];
-    wantedBy = [ "multi-user.target" ];
-    path = [ pkgs.netbird ];
-
-    serviceConfig = {
-      User = "nixpi";
-      Group = "users";
-      WorkingDirectory = "/home/nixpi/projects/app";
-      ExecStart = "${pkgs.nodejs_24}/bin/node scripts/dev-server.mjs";
-      Environment = [
-        "HOST=127.0.0.1"
-        "PORT=8080"
-        "PUBLIC_URL=https://nixos.netbird.cloud"
-      ];
-      Restart = "on-failure";
-      RestartSec = "5s";
-
-      NoNewPrivileges = true;
-      PrivateTmp = true;
-      ProtectSystem = "strict";
-      ProtectHome = "tmpfs";
-      BindPaths = [ "/home/nixpi/projects/app" ];
-    };
+    after = [ "netbird.service" ];
   };
 
   time.timeZone = "Europe/Bucharest";
@@ -163,7 +134,7 @@
 
   environment.systemPackages = with pkgs; [
     # Languages
-    nodejs_24 # latest Node.js LTS (24.x); also pinned by nixpi-dev
+    nodejs_24 # latest Node.js LTS (24.x)
     go_1_26 # latest Go (1.26.x)
     # Latest Python 3 (3.14.x) with pip bundled, so both `python3 -m pip`
     # and the `pip`/`pip3` commands work out of the box.

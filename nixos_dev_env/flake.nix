@@ -1,5 +1,5 @@
 {
-  description = "Nazar dev-box NixOS configuration";
+  description = "nixpi-dev-os NixOS configuration";
 
   nixConfig = {
     extra-substituters = [ "https://cache.numtide.com" ];

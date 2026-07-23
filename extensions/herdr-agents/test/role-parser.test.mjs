@@ -1,49 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
-import { readdir, readFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { filteredRoleTools, ORCHESTRATION_TOOLS, parseRoleFile, roleNameFromFilename, roleToPiArgs } from '../role-parser.js';
 
-// The first two and the executor-roles assertions are project-integration
-// checks against the application repository's real .pi/agents roles and
-// .pi/skills. They run when the application checkout is reachable (sibling
-// `app` checkout by default, or NIXPI_APP_ROOT) and skip otherwise so the
-// extension's own test suite stays self-contained.
-const appRoot = process.env.NIXPI_APP_ROOT || resolve(dirname(fileURLToPath(import.meta.url)), '../../../../app');
-const agentsDir = resolve(appRoot, '.pi/agents');
-const skillsDir = resolve(appRoot, '.pi/skills');
-const haveAppRoles = existsSync(agentsDir);
-const projectIt = haveAppRoles ? it : it.skip;
 describe('role compatibility', () => {
-  projectIt('parses all supported project roles without orchestration leakage', async () => {
-    const files = (await readdir(agentsDir)).filter((file) => file.endsWith('.md'));
-    assert.ok(files.length >= 1);
-    for (const file of files) {
-      const path = resolve(agentsDir, file);
-      const content = await readFile(path, 'utf8');
-      assert.equal(roleNameFromFilename(file), file.slice(0, -3));
-      const role = parseRoleFile(content, path);
-      const args = roleToPiArgs(role);
-      assert.ok(args.includes('--system-prompt') || args.includes('--append-system-prompt'));
-      for (const forbidden of ORCHESTRATION_TOOLS) assert.ok(!filteredRoleTools(role).includes(forbidden), `${file} leaked ${forbidden}`);
-    }
-  });
-
-  projectIt('resolves every declared role skill to an installed skill directory', async () => {
-    const entries = await readdir(skillsDir, { withFileTypes: true });
-    const installedSet = new Set(entries.filter((e) => e.isDirectory()).map((e) => e.name));
-    const files = (await readdir(agentsDir)).filter((file) => file.endsWith('.md'));
-    for (const file of files) {
-      const content = await readFile(resolve(agentsDir, file), 'utf8');
-      const role = parseRoleFile(content, resolve(agentsDir, file));
-      for (const skill of role.skills || []) {
-        assert.ok(installedSet.has(skill), `${file} declares skill '${skill}' which is not installed in .pi/skills/`);
-      }
-    }
-  });
-
   it('rejects every unsupported role key with its path and key name', () => {
     assert.throws(() => parseRoleFile('---\ndescription: unknown\nretry_count: 3\n---\nPrompt', '/roles/unknown.md'), /\/roles\/unknown\.md: unsupported role key 'retry_count'/);
     assert.throws(() => parseRoleFile('---\ndescription: background\nrun_in_background: true\n---\nPrompt', '/roles/bg.md'), /\/roles\/bg\.md: unsupported role key 'run_in_background'/);
@@ -80,21 +39,6 @@ describe('role compatibility', () => {
 
   it('retains a path-specific malformed-role error', () => {
     assert.throws(() => parseRoleFile('---\ndescription: bad\ntools: ext:bad tool\n---\nPrompt', '/roles/bad.md'), /\/roles\/bad\.md: unsafe characters/);
-  });
-
-  projectIt('executor roles do not claim automatic isolation and require manual worktree verification', async () => {
-    const executorFiles = ['executor.md', 'executor-qwen.md'];
-    for (const file of executorFiles) {
-      const content = await readFile(resolve(agentsDir, file), 'utf8');
-      const role = parseRoleFile(content, resolve(agentsDir, file));
-      const fullText = role.description + ' ' + role.prompt;
-      assert.ok(!/isolated\s+(git\s+)?worktree/i.test(fullText), `${file} claims automatic isolated worktree`);
-      assert.ok(!/automatic(ally)?\s+(creat|isolat)/i.test(fullText), `${file} claims automatic isolation or creation`);
-      assert.ok(/git worktree list/i.test(role.prompt), `${file} missing git worktree list verification`);
-      assert.ok(/git branch --show-current/i.test(role.prompt), `${file} missing branch identity check`);
-      assert.ok(/never create or remove worktrees/i.test(role.prompt), `${file} missing worktree creation/removal prohibition`);
-      assert.ok(/never.*push/i.test(role.prompt), `${file} missing push prohibition`);
-    }
   });
 
   it('requires delimiter-only opening and closing frontmatter lines', () => {
