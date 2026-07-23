@@ -9,18 +9,21 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     llm-agents.url = "github:numtide/llm-agents.nix";
+    paseo.url = "github:getpaseo/paseo";
   };
 
   outputs =
     {
       nixpkgs,
       llm-agents,
+      paseo,
       ...
     }:
     {
       nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
+          paseo.nixosModules.paseo
           (
             { pkgs, config, ... }:
             let

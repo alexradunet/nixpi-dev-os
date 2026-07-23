@@ -108,10 +108,45 @@
         "type": "github"
       }
     },
+    "nixpkgs_3": {
+      "locked": {
+        "lastModified": 1772963539,
+        "narHash": "sha256-9jVDGZnvCckTGdYT53d/EfznygLskyLQXYwJLKMPsZs=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "9dcb002ca1690658be4a04645215baea8b95f31d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "paseo": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_3"
+      },
+      "locked": {
+        "lastModified": 1784845559,
+        "narHash": "sha256-V1H3p10r/XCBWIsogkk/+MCA3pOylJv9bH4ABrOgr48=",
+        "owner": "getpaseo",
+        "repo": "paseo",
+        "rev": "4b5551d61cf958060d871a6c9621743e664cda6c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "getpaseo",
+        "repo": "paseo",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "llm-agents": "llm-agents",
-        "nixpkgs": "nixpkgs_2"
+        "nixpkgs": "nixpkgs_2",
+        "paseo": "paseo"
       }
     },
     "systems": {

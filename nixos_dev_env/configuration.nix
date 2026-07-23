@@ -1,4 +1,9 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 {
   options.nixpi = {
@@ -9,7 +14,7 @@
     };
     sshKeys = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default = [];
+      default = [ ];
       description = "SSH public keys for the primary user";
     };
     extensionsPath = lib.mkOption {
@@ -64,6 +69,17 @@
         maxretry = 3;
         bantime = "1h";
         ignoreIP = [ "127.0.0.1/8" ];
+      };
+
+      # Paseo: self-hosted daemon that orchestrates AI coding agents (Pi,
+      # Claude Code, Codex, ...). Runs as the primary user so spawned agents
+      # inherit its git/ssh/credentials and profile PATH (inheritUserEnvironment
+      # defaults on when user != "paseo"; state lives in ~/.paseo). Loopback-only
+      # by default; remote access goes through the upstream relay
+      # (services.paseo.relay). Set relay.enable = false for LAN/loopback only.
+      services.paseo = {
+        enable = true;
+        user = cfg.username;
       };
 
       time.timeZone = "Europe/Bucharest";
