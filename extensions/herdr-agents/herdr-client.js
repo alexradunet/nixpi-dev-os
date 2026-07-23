@@ -46,7 +46,7 @@ export class HerdrClient {
 
   async request(method, params = {}, timeoutMs, signal) {
     if (typeof method !== 'string' || !method) throw new Error('Herdr method is required');
-    return this.#sendRaw({ id: `balaur-${randomUUID()}`, method, params }, timeoutMs ?? this.#timeoutMs, signal);
+    return this.#sendRaw({ id: `nixpi-${randomUUID()}`, method, params }, timeoutMs ?? this.#timeoutMs, signal);
   }
 
   async ping(signal) {

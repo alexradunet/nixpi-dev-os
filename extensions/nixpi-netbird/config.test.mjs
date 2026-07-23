@@ -80,6 +80,6 @@ test("config reader rejects symlinks, wrong ownership, and wrong mode", async ()
 });
 
 test("group resolver uses an injected group file", async () => {
-  const fs = { readFile: async () => "root:x:0:\nbalaur-secrets:x:177:balaur\n" };
-  assert.equal(await resolveGroupGid("balaur-secrets", { fs }), 177);
+  const fs = { readFile: async () => "root:x:0:\nnixpi-secrets:x:177:nixpi\n" };
+  assert.equal(await resolveGroupGid("nixpi-secrets", { fs }), 177);
 });

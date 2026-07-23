@@ -80,7 +80,7 @@ describe('protocol-17 socket and lifecycle validation', () => {
       try {
         const split = server.requests.find((request) => request.method === 'pane.split');
         const args = server.requests.find((request) => request.method === 'agent.start').params.args;
-        assert.equal(split.params.env.BALAUR_WORKER, '1');
+        assert.equal(split.params.env.NIXPI_WORKER, '1');
         assert.ok(args.includes('--no-tools'));
         assert.ok(!args.includes('--tools'));
       } finally { await import('../pane-manager.js').then(({ removeRolePromptFile }) => removeRolePromptFile(started.promptFile)); }
@@ -139,7 +139,7 @@ describe('protocol-17 socket and lifecycle validation', () => {
     await withServer({}, async (client, server) => {
       await reportPaneMetadata(client, 'w1:p2', { role: 'executor', bridge: 'herdr-agent', state: 'ready' });
       const params = server.requests.find((request) => request.method === 'pane.report_metadata').params;
-      assert.equal(params.source, 'balaur-herdr-agent');
+      assert.equal(params.source, 'nixpi-herdr-agent');
       assert.deepEqual(Object.keys(params.tokens), ['role', 'bridge', 'state']);
       assert.ok(Object.keys(params.tokens).every((key) => /^[A-Za-z0-9_-]{1,32}$/.test(key)));
     });

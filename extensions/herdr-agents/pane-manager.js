@@ -7,7 +7,7 @@ import { resolve, join } from 'node:path';
 import { expectObject, HerdrRemoteError, requireString } from './herdr-client.js';
 import { roleToPiArgs } from './role-parser.js';
 
-export const METADATA_SOURCE = 'balaur-herdr-agent';
+export const METADATA_SOURCE = 'nixpi-herdr-agent';
 export const HERDR_AGENT_STATUSES = new Set(['idle', 'working', 'blocked', 'done', 'unknown']);
 const SOURCE_RE = /^[A-Za-z0-9_-]{1,32}$/;
 
@@ -76,7 +76,7 @@ export async function startAgent(client, opts, signal) {
 }
 
 async function writeRolePromptFile(role) {
-  const dir = await mkdtemp(join(tmpdir(), 'balaur-herdr-role-'));
+  const dir = await mkdtemp(join(tmpdir(), 'nixpi-herdr-role-'));
   const path = join(dir, 'system-prompt.md');
   await writeFile(path, role.prompt, { encoding: 'utf8', mode: 0o600 });
   return { dir, path };
@@ -206,5 +206,5 @@ export async function reportPaneMetadata(client, paneId, tokens, signal) {
 }
 
 export function buildWorkerEnv(baseEnv) {
-  return { ...(baseEnv || {}), BALAUR_WORKER: '1' };
+  return { ...(baseEnv || {}), NIXPI_WORKER: '1' };
 }

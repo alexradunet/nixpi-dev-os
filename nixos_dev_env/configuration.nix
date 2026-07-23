@@ -6,7 +6,7 @@
 
   networking.hostName = "nixos";
   networking.networkmanager.enable = true;
-  # Remote browsers must use HTTPS: Balaur's canonical-vault hashing depends
+  # Remote browsers must use HTTPS: the app's canonical-vault hashing depends
   # on WebCrypto, which browsers withhold from plain HTTP non-localhost origins.
   networking.firewall.interfaces.netbird0.allowedTCPPorts = [
     443
@@ -60,11 +60,11 @@
       # The root certificate is public material. Serving it here gives a new
       # NetBird client a bounded bootstrap path; the CA private key remains in
       # Caddy's protected state directory.
-      handle /balaur-dev-ca.crt {
+      handle /nixpi-dev-ca.crt {
         root * /var/lib/caddy/.local/share/caddy/pki/authorities/local
         rewrite * /root.crt
         header Content-Type application/x-x509-ca-cert
-        header Content-Disposition "attachment; filename=balaur-dev-ca.crt"
+        header Content-Disposition "attachment; filename=nixpi-dev-ca.crt"
         file_server
       }
 
@@ -75,22 +75,22 @@
   };
 
   systemd.services.caddy = {
-    after = [ "balaur-dev.service" "netbird.service" ];
-    wants = [ "balaur-dev.service" ];
+    after = [ "nixpi-dev.service" "netbird.service" ];
+    wants = [ "nixpi-dev.service" ];
   };
 
-  systemd.services.balaur-dev = {
-    description = "Balaur development server with live reload";
+  systemd.services.nixpi-dev = {
+    description = "Nazar development server with live reload";
     after = [ "network-online.target" "netbird.service" ];
     wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
     path = [ pkgs.netbird ];
 
     serviceConfig = {
-      User = "balaur";
+      User = "nixpi";
       Group = "users";
-      WorkingDirectory = "/home/balaur/projects/balaur";
-      ExecStart = "${pkgs.nodejs_24}/bin/node scripts/balaur-dev.mjs";
+      WorkingDirectory = "/home/nixpi/projects/app";
+      ExecStart = "${pkgs.nodejs_24}/bin/node scripts/dev-server.mjs";
       Environment = [
         "HOST=127.0.0.1"
         "PORT=8080"
@@ -103,7 +103,7 @@
       PrivateTmp = true;
       ProtectSystem = "strict";
       ProtectHome = "tmpfs";
-      BindPaths = [ "/home/balaur/projects/balaur" ];
+      BindPaths = [ "/home/nixpi/projects/app" ];
     };
   };
 
@@ -127,16 +127,16 @@
     variant = "";
   };
 
-  users.groups.balaur-secrets = { };
+  users.groups.nixpi-secrets = { };
 
-  users.users.balaur = {
+  users.users.nixpi = {
     isNormalUser = true;
-    description = "balaur";
+    description = "nixpi";
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPOkyb6k2hdZHcP2gPb24NEroog7e26xA3IKGKkcv8qe u0_a478@localhost"
     ];
     extraGroups = [
-      "balaur-secrets"
+      "nixpi-secrets"
       "networkmanager"
       "wheel"
     ];
@@ -144,8 +144,8 @@
   };
 
   systemd.tmpfiles.rules = [
-    "d /etc/balaur 0750 root balaur-secrets - -"
-    "f /etc/balaur/netbird.env 0640 root balaur-secrets - -"
+    "d /etc/nixpi 0750 root nixpi-secrets - -"
+    "f /etc/nixpi/netbird.env 0640 root nixpi-secrets - -"
   ];
 
   security.sudo.wheelNeedsPassword = false;
@@ -163,7 +163,7 @@
 
   environment.systemPackages = with pkgs; [
     # Languages
-    nodejs_24 # latest Node.js LTS (24.x); also pinned by balaur-dev
+    nodejs_24 # latest Node.js LTS (24.x); also pinned by nixpi-dev
     go_1_26 # latest Go (1.26.x)
     # Latest Python 3 (3.14.x) with pip bundled, so both `python3 -m pip`
     # and the `pip`/`pip3` commands work out of the box.

@@ -11,7 +11,7 @@ import { createHandle, addHandle, createHandleStore, deserializeStore, serialize
 const here = dirname(fileURLToPath(import.meta.url));
 const extensionDir = resolve(here, '..');
 const sessionPath = resolve(here, 'fixtures/session.jsonl');
-const originalEnv = { HERDR_ENV: process.env.HERDR_ENV, HERDR_SOCKET_PATH: process.env.HERDR_SOCKET_PATH, HERDR_PANE_ID: process.env.HERDR_PANE_ID, BALAUR_WORKER: process.env.BALAUR_WORKER };
+const originalEnv = { HERDR_ENV: process.env.HERDR_ENV, HERDR_SOCKET_PATH: process.env.HERDR_SOCKET_PATH, HERDR_PANE_ID: process.env.HERDR_PANE_ID, NIXPI_WORKER: process.env.NIXPI_WORKER };
 let stubDir;
 let rolesCwd;
 
@@ -62,7 +62,7 @@ before(async () => {
 after(async () => { await rm(stubDir, { recursive: true, force: true }); await rm(rolesCwd, { recursive: true, force: true }); for (const [key, value] of Object.entries(originalEnv)) value === undefined ? delete process.env[key] : process.env[key] = value; });
 
 async function loadRegisteredTool(server, branch = []) {
-  process.env.HERDR_ENV = '1'; process.env.HERDR_SOCKET_PATH = server.path; process.env.HERDR_PANE_ID = 'w1:p1'; delete process.env.BALAUR_WORKER;
+  process.env.HERDR_ENV = '1'; process.env.HERDR_SOCKET_PATH = server.path; process.env.HERDR_PANE_ID = 'w1:p1'; delete process.env.NIXPI_WORKER;
   const registered = []; const events = new Map();
   const pi = { appendEntry: (customType, data) => branch.push({ type: 'custom', customType, data }), registerTool: (tool) => registered.push(tool), on: (name, handler) => events.set(name, handler) };
   const mod = await import(`${pathToFileURL(resolve(extensionDir, 'index.ts')).href}?registered=${Date.now()}-${Math.random()}`);
@@ -75,7 +75,7 @@ async function loadRegisteredTool(server, branch = []) {
 
 async function startWorker(tool, ctx) { const result = await tool.execute('start', { action: 'start', role: 'implementer-openai' }, undefined, undefined, ctx); return result.details.handle; }
 function latestPersistedHandle(branch, handleId) {
-  const entry = [...branch].reverse().find((candidate) => candidate.type === 'custom' && candidate.customType === 'balaur-herdr-agent-store');
+  const entry = [...branch].reverse().find((candidate) => candidate.type === 'custom' && candidate.customType === 'nixpi-herdr-agent-store');
   return deserializeStore(entry.data.store).handles[handleId];
 }
 
@@ -263,10 +263,10 @@ describe('registered herdr_agent extension acceptance matrix', { concurrency: fa
     assert.equal(tools.length, 0);
   });
 
-  it('suppresses tool registration when BALAUR_WORKER=1 in a full Herdr environment', async () => {
-    process.env.HERDR_ENV = '1'; process.env.HERDR_SOCKET_PATH = '/tmp/fake.sock'; process.env.HERDR_PANE_ID = 'w1:p1'; process.env.BALAUR_WORKER = '1';
+  it('suppresses tool registration when NIXPI_WORKER=1 in a full Herdr environment', async () => {
+    process.env.HERDR_ENV = '1'; process.env.HERDR_SOCKET_PATH = '/tmp/fake.sock'; process.env.HERDR_PANE_ID = 'w1:p1'; process.env.NIXPI_WORKER = '1';
     const tools = []; const mod = await import(`${pathToFileURL(resolve(extensionDir, 'index.ts')).href}?worker-suppressed=${Date.now()}`); mod.default({ registerTool: (tool) => tools.push(tool), on: () => {} });
-    assert.equal(tools.length, 0, 'BALAUR_WORKER=1 must prevent herdr_agent registration even with full Herdr env');
+    assert.equal(tools.length, 0, 'NIXPI_WORKER=1 must prevent herdr_agent registration even with full Herdr env');
   });
 
   it('keeps a ready handle when auxiliary metadata reporting fails and persists custom snapshots', async () => {
@@ -275,7 +275,7 @@ describe('registered herdr_agent extension acceptance matrix', { concurrency: fa
       const loaded = await loadRegisteredTool(server); const handle = await startWorker(loaded.tool, loaded.ctx);
       const result = await loaded.tool.execute('list', { action: 'list' }, undefined, undefined, loaded.ctx);
       assert.match(result.content[0].text, new RegExp(handle));
-      assert.ok(loaded.branch.some((entry) => entry.type === 'custom' && entry.customType === 'balaur-herdr-agent-store'));
+      assert.ok(loaded.branch.some((entry) => entry.type === 'custom' && entry.customType === 'nixpi-herdr-agent-store'));
       assert.equal(server.requests.some((request) => request.method === 'pane.close'), false);
     } finally { await server.stop(); }
   });
@@ -447,7 +447,7 @@ describe('registered herdr_agent extension acceptance matrix', { concurrency: fa
       const store = addHandle(createHandleStore(), handle);
       const server = new FakeHerdr({ handlers: { 'agent.list': () => ({ type: 'agent_list', agents: inventory }) } }); await server.start();
       try {
-        const loaded = await loadRegisteredTool(server, [{ type: 'custom', customType: 'balaur-herdr-agent-store', data: { version: 1, store: serializeStore(store) } }]);
+        const loaded = await loadRegisteredTool(server, [{ type: 'custom', customType: 'nixpi-herdr-agent-store', data: { version: 1, store: serializeStore(store) } }]);
         assert.equal(latestPersistedHandle(loaded.branch, handle.handleId).status, 'replaced');
       } finally { await server.stop(); }
     }
@@ -460,14 +460,14 @@ describe('registered herdr_agent extension acceptance matrix', { concurrency: fa
     const server = new FakeHerdr(); await server.start();
     try {
       let loaded = await loadRegisteredTool(server, [
-        { type: 'custom', customType: 'balaur-herdr-agent-store', data: { version: 1, store: serializeStore(oldStore) } },
-        { type: 'custom', customType: 'balaur-herdr-agent-store', data: { version: 1, store: corruptStore } },
+        { type: 'custom', customType: 'nixpi-herdr-agent-store', data: { version: 1, store: serializeStore(oldStore) } },
+        { type: 'custom', customType: 'nixpi-herdr-agent-store', data: { version: 1, store: corruptStore } },
       ]);
       assert.equal((await loaded.tool.execute('list', { action: 'list' }, undefined, undefined, loaded.ctx)).details.handles.length, 1);
 
       loaded = await loadRegisteredTool(server, [
-        { type: 'custom', customType: 'balaur-herdr-agent-store', data: { version: 1, store: serializeStore(oldStore) } },
-        { type: 'custom', customType: 'balaur-herdr-agent-store', data: { version: 2, store: serializeStore(createHandleStore()) } },
+        { type: 'custom', customType: 'nixpi-herdr-agent-store', data: { version: 1, store: serializeStore(oldStore) } },
+        { type: 'custom', customType: 'nixpi-herdr-agent-store', data: { version: 2, store: serializeStore(createHandleStore()) } },
       ]);
       assert.equal((await loaded.tool.execute('list', { action: 'list' }, undefined, undefined, loaded.ctx)).details.handles.length, 1);
     } finally { await server.stop(); }

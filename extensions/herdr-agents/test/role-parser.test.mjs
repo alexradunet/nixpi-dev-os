@@ -9,9 +9,9 @@ import { filteredRoleTools, ORCHESTRATION_TOOLS, parseRoleFile, roleNameFromFile
 // The first two and the executor-roles assertions are project-integration
 // checks against the application repository's real .pi/agents roles and
 // .pi/skills. They run when the application checkout is reachable (sibling
-// `balaur` checkout by default, or BALAUR_APP_ROOT) and skip otherwise so the
+// `app` checkout by default, or NIXPI_APP_ROOT) and skip otherwise so the
 // extension's own test suite stays self-contained.
-const appRoot = process.env.BALAUR_APP_ROOT || resolve(dirname(fileURLToPath(import.meta.url)), '../../../../balaur');
+const appRoot = process.env.NIXPI_APP_ROOT || resolve(dirname(fileURLToPath(import.meta.url)), '../../../../app');
 const agentsDir = resolve(appRoot, '.pi/agents');
 const skillsDir = resolve(appRoot, '.pi/skills');
 const haveAppRoles = existsSync(agentsDir);

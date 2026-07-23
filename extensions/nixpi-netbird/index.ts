@@ -7,7 +7,7 @@ import { openNetbirdDashboard } from "./dashboard.ts";
 import { createMutationService } from "./mutations.mjs";
 import { formatProjection, presentInspect, summarizePeers } from "./presenters.mjs";
 
-const STATUS_ID = "balaur-netbird";
+const STATUS_ID = "nixpi-netbird";
 const STATUS_INTERVAL_MS = 60_000;
 
 function safeMessage(error: unknown): string {
@@ -15,7 +15,7 @@ function safeMessage(error: unknown): string {
   return message.replace(/\b(?:Token|Bearer)\s+\S+/gi, "[REDACTED]").slice(0, 500);
 }
 
-export default function balaurNetbirdExtension(pi: ExtensionAPI) {
+export default function nixpiNetbirdExtension(pi: ExtensionAPI) {
   const client = createNetbirdClient();
   const mutations = createMutationService({ client });
   let statusTimer: ReturnType<typeof setInterval> | undefined;

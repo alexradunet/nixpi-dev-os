@@ -15,12 +15,12 @@ import { classifyHandleInventory, createHandleStore, createHandle, deserializeSt
 const ActionSchema = StringEnum(["start", "list", "status", "wait", "read", "prompt", "collect", "close"] as const);
 const BOUNDED_STRING = (description: string, maxLength = 16000) => Type.String({ description, minLength: 1, maxLength });
 const HerdrAgentParams = Type.Object({ action: ActionSchema, role: Type.Optional(BOUNDED_STRING("Role name from .pi/agents/*.md", 64)), handle: Type.Optional(BOUNDED_STRING("Worker handle ID", 64)), prompt: Type.Optional(BOUNDED_STRING("Prompt text", 16000)), timeout_ms: Type.Optional(Type.Integer({ minimum: 3000, maximum: 300000 })), lines: Type.Optional(Type.Integer({ minimum: 1, maximum: 5000 })) }, { additionalProperties: false });
-const CUSTOM_STORE_TYPE = "balaur-herdr-agent-store";
+const CUSTOM_STORE_TYPE = "nixpi-herdr-agent-store";
 const handleMap = new Map<string, WorkerHandle>();
 const MAX_ERROR_BYTES = 4000;
 
 export default function (pi: ExtensionAPI) {
-  if (process.env.BALAUR_WORKER === "1" || !HerdrClient.isInHerdrPane()) return;
+  if (process.env.NIXPI_WORKER === "1" || !HerdrClient.isInHerdrPane()) return;
   const herdrEnv = HerdrClient.getHerdrEnv();
   if (!herdrEnv) return;
   const makeClient = () => new HerdrClient({ socketPath: herdrEnv.socketPath, timeoutMs: 10000 });

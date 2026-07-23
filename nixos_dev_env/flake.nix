@@ -1,5 +1,5 @@
 {
-  description = "balaur's NixOS configuration";
+  description = "Nazar dev-box NixOS configuration";
 
   nixConfig = {
     extra-substituters = [ "https://cache.numtide.com" ];
@@ -31,6 +31,7 @@
             let
               system = pkgs.stdenv.hostPlatform.system;
               herdrPackage = herdr.packages.${system}.default;
+              username = "nixpi";
             in
             {
               environment.systemPackages = [
@@ -41,7 +42,7 @@
               # Keep Herdr's Pi lifecycle/session integration in sync with the
               # pinned Herdr release. Preserve any user-customized config.
               system.userActivationScripts.herdr = ''
-                if [ "$USER" = "balaur" ]; then
+                if [ "$USER" = "${username}" ]; then
                   config_dir="$HOME/.config/herdr"
                   config_file="$config_dir/config.toml"
                   mkdir -p "$config_dir"

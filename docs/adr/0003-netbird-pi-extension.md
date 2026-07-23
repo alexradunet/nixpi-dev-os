@@ -5,16 +5,16 @@
 
 ## Context
 
-Balaur is developed remotely over NetBird, and Pi runs as the privileged local `balaur` account. Operators need quick network visibility and carefully controlled NetBird Cloud administration without copying credentials into prompts, sessions, shell history, the repository, Nix store, or systemd environments.
+The dev host is developed remotely over NetBird, and Pi runs as the privileged local `nixpi` account. Operators need quick network visibility and carefully controlled NetBird Cloud administration without copying credentials into prompts, sessions, shell history, the repository, Nix store, or systemd environments.
 
 A generic HTTP tool or an unattended mutation path would turn model-provided strings into account-wide network administration. A dashboard with write controls would also make review and confirmation boundaries harder to audit. The NetBird API uses replace-oriented `PUT` operations, so stale reads are material.
 
 ## Decision
 
-Ship the extension under `extensions/balaur-netbird/` (in this repository) with these boundaries:
+Ship the extension under `extensions/nixpi-netbird/` (in this repository) with these boundaries:
 
 1. The only remote origin is `https://api.netbird.io`. Internal domain methods own every documented endpoint and HTTP method; tool input never provides either.
-2. A dedicated NetBird service-user Personal Access Token with the Network Admin role is read on demand from `/etc/balaur/netbird.env`. The file must be a non-symlink regular file owned by `root:balaur-secrets` with mode `0640`, and it may contain only one `NETBIRD_API_TOKEN` assignment plus comments and blank lines.
+2. A dedicated NetBird service-user Personal Access Token with the Network Admin role is read on demand from `/etc/nixpi/netbird.env`. The file must be a non-symlink regular file owned by `root:nixpi-secrets` with mode `0640`, and it may contain only one `NETBIRD_API_TOKEN` assignment plus comments and blank lines.
 3. NixOS creates the group, protected directory, and empty file, but never contains or propagates the token value.
 4. Read access is limited to overview, peers, groups, policies, networks, routes, DNS settings/nameserver groups, posture checks, and recent events. Responses and projections are bounded.
 5. The dashboard is a non-overlay read-only TUI. `/netbird doctor` and the low-frequency footer status combine local daemon readiness with a secret-free Cloud peer summary.
@@ -42,4 +42,4 @@ Ship the extension under `extensions/balaur-netbird/` (in this repository) with 
 
 ## Extraction
 
-On 2026-07-23 the NetBird Pi extension, the NixOS configuration, and this ADR were extracted from the [`alexradunet/balaur`](https://github.com/alexradunet/balaur) application repository into this dedicated `alexradunet/balaur-dev-os` environment repository, to separate the application from its self-hosted development environment. The extension moved from `.pi/extensions/balaur-netbird/` to `extensions/balaur-netbird/`; this ADR is the authoritative record for the decision and travels with the code it describes. The extension is loaded into the application checkout as a Pi git package (`pi install git:github.com/alexradunet/balaur-dev-os@<ref>`); Pi auto-discovers it from the conventional `extensions/` directory after the project is trusted. The application repository's `AGENTS.md` and `docs/agents/development-workflow.md` point here for the credential, NixOS, and extension details.
+On 2026-07-23 the NetBird Pi extension, the NixOS configuration, and this ADR were extracted from the [`alexradunet/balaur`](https://github.com/alexradunet/balaur) application repository into this dedicated environment repository, to separate the application from its self-hosted development environment. The extension moved from `.pi/extensions/balaur-netbird/` to `extensions/nixpi-netbird/`; this ADR is the authoritative record for the decision and travels with the code it describes. The extension is loaded into the application checkout as a Pi git package (`pi install git:github.com/alexradunet/nixpi-dev-os@<ref>`); Pi auto-discovers it from the conventional `extensions/` directory after the project is trusted. The application repository's `AGENTS.md` and `docs/agents/development-workflow.md` point here for the credential, NixOS, and extension details.

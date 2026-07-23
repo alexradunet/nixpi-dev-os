@@ -1,8 +1,8 @@
 import { constants as fsConstants } from "node:fs";
 import * as defaultFs from "node:fs/promises";
 
-export const NETBIRD_CONFIG_PATH = "/etc/balaur/netbird.env";
-export const NETBIRD_SECRET_GROUP = "balaur-secrets";
+export const NETBIRD_CONFIG_PATH = "/etc/nixpi/netbird.env";
+export const NETBIRD_SECRET_GROUP = "nixpi-secrets";
 
 function configError(message) {
   return new Error(`NetBird configuration error: ${message}`);
@@ -58,7 +58,7 @@ function assertMetadata(stat, expectedGid) {
     throw configError("configuration file must not be a symlink");
   }
   if (stat.uid !== 0 || stat.gid !== expectedGid || (stat.mode & 0o7777) !== 0o640) {
-    throw configError("configuration file must be root:balaur-secrets mode 0640");
+    throw configError("configuration file must be root:nixpi-secrets mode 0640");
   }
   if (typeof stat.isFile === "function" && !stat.isFile()) {
     throw configError("configuration path is not a regular file");
