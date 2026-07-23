@@ -98,7 +98,9 @@ Not every project follows the full pipeline:
 - **Bug:** explore → plan (fix) → implement → review
 - **Trivial fix:** just fix it in-session. No project folder, no spawn.
 - **Audit / improvement:** plan (audit mode) → implement → review
-- **Learning:** teach (in-session or spawned)
+- **Learning:** teach (in-session)
+
+Spawnable phases (delegated via the `subagent` tool): explore, plan, implement, review. In-session phases: grill, teach, janitor. The filesystem is the contract: a phase is spawnable if and only if its role file exists in `.pi/agents/`.
 
 ## Decision threshold
 
@@ -134,20 +136,20 @@ When the user opens a session:
 
 Two layers, kept separate:
 
-- **Skills** (`pi_skills/{name}/SKILL.md`) — the methodology for a phase, invoked as a slash command: `/grill`, `/explore`, `/plan`, `/implement`, `/review`, `/teach`, `/janitor`. Each pairs read-only discipline with an artifact contract.
-- **Roles** (`.pi/agents/{name}.md`) — thin herdr worker wrappers. A role sets `model`, `thinking`, `tools`, `prompt_mode`, and loads a skill via `skills: {name}`. The role is the wrapper; the skill is the brain.
+- **Skills** (`pi_skills/{name}/SKILL.md`) — the methodology for a phase, invoked in-session as a slash command: `/grill`, `/explore`, `/plan`, `/implement`, `/review`, `/teach`, `/janitor`. Each pairs read-only discipline with an artifact contract.
+- **Roles** (`.pi/agents/{name}.md`) — subagent definitions for the spawnable phases (explore, plan, implement, review). Frontmatter: `name`, `description`, `model`, `thinking`, `tools`. The body is the worker's system prompt and must point the worker at its skill (`~/.pi/agent/skills/{name}/SKILL.md`). Never embed a skill's methodology inside a role — that duplicates the skill and drifts.
 
-Skills, extensions, and roles are installed **globally** on rebuild: the activation scripts in `nixos_dev_env/configuration.nix` symlink `pi_skills/*`, `pi_extensions/*`, and `.pi/agents/*` into `~/.pi/agent/skills/`, `~/.pi/agent/extensions/`, and `~/.pi/agent/agents/`, so they are available in every repository. herdr's `start` action requires a role; it scans the global `~/.pi/agent/agents/` first and then the current directory's `.pi/agents/`, so a project-local role overrides a global one with the same name. The role's `skills:` field resolves the skill at `.pi/skills/{name}/SKILL.md` (the `.pi/skills -> ../pi_skills` symlink makes this resolve). Never embed a skill's methodology inside a role — that duplicates the skill and drifts.
+Skills, extensions, and roles are installed **globally** on rebuild: the activation scripts in `nixos_dev_env/configuration.nix` symlink `pi_skills/*`, `pi_extensions/*`, and `.pi/agents/*` into `~/.pi/agent/skills/`, `~/.pi/agent/extensions/`, and `~/.pi/agent/agents/`, so they are available in every repository. The `subagent` tool (a patched copy of pi's official example at `pi_extensions/subagent/`) discovers roles from the global agents directory and runs each delegation as a one-shot `pi` subprocess with an isolated context window. Workers are spawned with `NIXPI_WORKER=1` in their environment and cannot spawn further workers.
 
 ## When the user says "go"
 
 1. Read `resources/model-registry.md` for the recommended model.
 2. Recommend the model based on task complexity:
-   - "I'd use qwen3.8-max-preview (top tier) for this grill — heavy architectural tradeoffs. OK?"
-3. The user confirms or overrides.
-4. Spawn the herdr worker via a **role** (`.pi/agents/{phase}.md`) that loads the phase's skill (`skills: {phase}`) and sets the model plus the tool sandbox for that phase (read-only for grill/explore/plan/review; full for implement). Then send it the project context (idea, prior artifacts, artifact path).
-5. Before spawning `implement`, confirm the plan and prior artifacts are **committed** — the implementer runs in a worktree and cannot read uncommitted files from the main checkout.
-6. Tell the user: "Grill pane is up. Switch to it when ready."
+   - "I'd use qwen3.8-max-preview (top tier) for this plan — heavy design tradeoffs. OK?"
+3. The user confirms or overrides. The model lives in the role's frontmatter; if the user overrides, edit the role file before delegating.
+4. For `implement` only: confirm the plan and prior artifacts are **committed**, then create the worktree: `git worktree add ../nixpi-dev-os-{NNN}-{slug} -b {NNN}-{slug}`.
+5. Delegate via the `subagent` tool: `agent` = role name, `task` = the project context (idea, prior artifacts, artifact path contract). Pass `cwd` = worktree path for implement and review; leave it unset for explore and plan (main checkout).
+6. Tell the user: "Delegated. Progress streams into the subagent tool call; I'll read the artifact when it returns."
 
 ## When the user comes back
 
