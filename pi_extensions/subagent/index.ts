@@ -293,6 +293,7 @@ async function runSingleAgent(
 
 	const args: string[] = ["--mode", "json", "-p", "--no-session"];
 	if (agent.model) args.push("--model", agent.model);
+	if (agent.thinking) args.push("--thinking", agent.thinking);
 	if (agent.tools && agent.tools.length > 0) args.push("--tools", agent.tools.join(","));
 
 	let tmpPromptDir: string | null = null;
@@ -336,6 +337,7 @@ async function runSingleAgent(
 				cwd: cwd ?? defaultCwd,
 				shell: false,
 				stdio: ["ignore", "pipe", "pipe"],
+				env: { ...process.env, NIXPI_WORKER: "1" },
 			});
 			let buffer = "";
 
@@ -458,6 +460,8 @@ const SubagentParams = Type.Object({
 });
 
 export default function (pi: ExtensionAPI) {
+	// Nesting guard: workers are plain pi sessions and must not re-register the spawner tool.
+	if (process.env.NIXPI_WORKER === "1") return;
 	pi.registerTool({
 		name: "subagent",
 		label: "Subagent",
