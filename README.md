@@ -14,7 +14,7 @@ pi_extensions/                          Pi extensions
     index.ts                            subagent delegation tool; serves skills; injects the playbook
     agents.ts                           Role discovery (bundled roles/ + user + project)
     AGENTS.md                           Generalized orchestration playbook (injected via before_agent_start)
-    model-registry-template.md          Seed template for a repo's resources/model-registry.md
+    model-registry-template.md          Seed template for a repo's para/resources/model-registry.md
     skills/                             Orchestration skills: grill, explore, plan, implement, review, teach, janitor
     roles/                              Subagent roles for spawnable phases: explore, plan, implement, review
 ```
@@ -59,7 +59,7 @@ The extension bundles everything the orchestration needs and resolves it all rel
 - **Skills** (`orchestrator/skills/`) — served via `resources_discover`. User slash-commands (`/grill`, `/explore`, `/plan`, `/implement`, `/review`, `/teach`, `/janitor`); they carry `disable-model-invocation: true`, so they do not appear in the model's auto-invokable skill list.
 - **Roles** (`orchestrator/roles/`) — subagent definitions, one per spawnable phase (explore, plan, implement, review). The `subagent` tool discovers them from the bundled `roles/` directory (plus the user and project agent dirs) and runs each delegation as a one-shot `pi` subprocess, injecting `NIXPI_SKILLS_DIR` so the worker can read its skill.
 - **Playbook** (`orchestrator/AGENTS.md`) — the generalized "way of work", injected into the system prompt via `before_agent_start`. It composes with any repo-local `AGENTS.md`.
-- **Registry template** (`orchestrator/model-registry-template.md`) — seed for a repo's `resources/model-registry.md` (auto-created from `pi --list-models` on first use).
+- **Registry template** (`orchestrator/model-registry-template.md`) — seed for a repo's `para/resources/model-registry.md` (auto-created from `pi --list-models` on first use).
 
 In-session phases (grill, teach, janitor) have no role file; invoke their skills directly.
 

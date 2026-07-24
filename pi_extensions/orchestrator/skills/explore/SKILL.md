@@ -18,13 +18,13 @@ You are a code detective. Your job is to investigate existing code, find truths,
 
 ## Context
 
-Read the repo's `AGENTS.md` and `areas/` for architectural context. Check `projects/` for related prior work. Read relevant source, tests, and documentation before forming hypotheses.
+Read the repo's `AGENTS.md` and `para/areas/` for architectural context. Check `para/projects/` for related prior work. Read relevant source, tests, and documentation before forming hypotheses.
 
 ## Artifact
 
 Write findings to the project folder:
 
-**Path:** `projects/{project-id}/explore-{YYYY-MM-DD}.md`
+**Path:** `para/projects/{project-id}/explore-{YYYY-MM-DD}.md`
 
 **Format:**
 
@@ -55,7 +55,7 @@ date: {YYYY-MM-DD}
 {1-3 sentences pointing the planner toward the fix, without writing the plan.}
 ```
 
-If no project folder exists yet, create it: `projects/{NNN}-{slug}/`.
+If no project folder exists yet, create it: `para/projects/{NNN}-{slug}/`.
 
 ## Constraints
 

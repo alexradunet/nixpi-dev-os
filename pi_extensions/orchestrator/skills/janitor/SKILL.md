@@ -1,6 +1,6 @@
 ---
 name: janitor
-description: Close out a completed project. Distills reusable knowledge into resources/ and areas/, then moves the project folder to archive/. Run manually when a project is done.
+description: "Close out a completed project. Distills reusable knowledge into para/resources/ and para/areas/, then moves the project folder to para/archive/. Run manually when a project is done."
 disable-model-invocation: true
 argument-hint: "Which project should I close out?"
 ---
@@ -11,45 +11,45 @@ You are the janitor. Your job is to close out a completed project: extract what'
 
 ### 1. Assess the project
 
-Read everything in `projects/{project-id}/`:
+Read everything in `para/projects/{project-id}/`:
 - Grill summaries (decisions made, what was ruled out)
 - Explore findings (root causes, patterns discovered)
 - Plans (what was built, how)
 - Implementation summaries (what actually happened, deviations)
 - Reviews (verdicts, findings, suggestions)
 
-### 2. Distill into resources/
+### 2. Distill into para/resources/
 
 Extract reusable knowledge that future projects (or future agents) will benefit from:
 
-- **Architectural decisions** → `areas/{relevant-area}/decisions/` (what was decided and why, so it's not re-litigated)
-- **Patterns and solutions** → `resources/{topic}.md` (how we solved X, applicable to future work)
-- **Lessons learned** → `resources/lessons/{slug}.md` (what went wrong, what to watch for)
-- **Reference material** → `resources/{topic}.md` (compressed knowledge useful across projects)
+- **Architectural decisions** → `para/areas/{relevant-area}/decisions/` (what was decided and why, so it's not re-litigated)
+- **Patterns and solutions** → `para/resources/{topic}.md` (how we solved X, applicable to future work)
+- **Lessons learned** → `para/resources/lessons/{slug}.md` (what went wrong, what to watch for)
+- **Reference material** → `para/resources/{topic}.md` (compressed knowledge useful across projects)
 
 Each distilled document should be:
 - Self-contained (readable without the project context)
 - Concise (the essence, not the back-and-forth)
 - Attributed (which project it came from, date)
 
-### 3. Update areas/
+### 3. Update para/areas/
 
 If the project touched an ongoing area of responsibility:
 - Update relevant area documents with new state
 - Note any ongoing maintenance obligations the project created
-- Update `areas/{area}/README.md` if the project changed the area's scope
+- Update `para/areas/{area}/README.md` if the project changed the area's scope
 
 ### 4. Archive the project
 
-Move the entire project folder to `archive/`:
+Move the entire project folder to `para/archive/`:
 
 ```bash
-mv projects/{project-id} archive/{project-id}
+mv para/projects/{project-id} para/archive/{project-id}
 ```
 
 ### 5. Write a closure note
 
-Create `archive/{project-id}/CLOSURE.md`:
+Create `para/archive/{project-id}/CLOSURE.md`:
 
 ```markdown
 ---
@@ -64,8 +64,8 @@ status: complete | abandoned | merged
 {1-3 sentences.}
 
 ## What was distilled
-- `resources/{file}` — {what knowledge}
-- `areas/{area}/{file}` — {what was updated}
+- `para/resources/{file}` — {what knowledge}
+- `para/areas/{area}/{file}` — {what was updated}
 
 ## What was left behind
 {Anything intentionally not carried forward, and why.}

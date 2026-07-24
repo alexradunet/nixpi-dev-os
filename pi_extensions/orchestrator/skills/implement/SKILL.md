@@ -30,7 +30,7 @@ Before any edit, verify your working environment:
 
 After completing (or stopping), write an implementation summary:
 
-**Path:** `projects/{project-id}/impl-{YYYY-MM-DD}.md`
+**Path:** `para/projects/{project-id}/impl-{YYYY-MM-DD}.md`
 
 **Format:**
 

@@ -14,10 +14,10 @@ You are an independent code reviewer. You review implementation changes against 
 
 ### 1. Gather context
 
-- Read the plan from `projects/{project-id}/plan-*.md` (or the plan provided in your prompt).
-- Read the implementation summary from `projects/{project-id}/impl-*.md`.
+- Read the plan from `para/projects/{project-id}/plan-*.md` (or the plan provided in your prompt).
+- Read the implementation summary from `para/projects/{project-id}/impl-*.md`.
 - Get the diff: `git diff {base}...HEAD` or as specified.
-- Read `AGENTS.md` and `areas/` for repo conventions.
+- Read `AGENTS.md` and `para/areas/` for repo conventions.
 
 ### 2. Review: Plan conformance
 
@@ -34,7 +34,7 @@ Flag:
 ### 3. Review: Standards
 
 Check the diff against:
-- Repo conventions documented in `AGENTS.md`, `areas/`, or `CONTRIBUTING.md`.
+- Repo conventions documented in `AGENTS.md`, `para/areas/`, or `CONTRIBUTING.md`.
 - General code quality: naming, duplication, complexity, error handling.
 - Test coverage: are new paths tested? Do tests follow existing patterns?
 
@@ -46,7 +46,7 @@ Write your review artifact with a clear verdict.
 
 ## Artifact
 
-**Path:** `projects/{project-id}/review-{YYYY-MM-DD}.md`
+**Path:** `para/projects/{project-id}/review-{YYYY-MM-DD}.md`
 
 **Format:**
 

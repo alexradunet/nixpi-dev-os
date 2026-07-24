@@ -1,6 +1,6 @@
 ---
 name: teach
-description: Teach the user a new skill or concept. Creates a persistent teaching workspace in areas/learning/{topic}/ within the repo's PARA structure.
+description: "Teach the user a new skill or concept. Creates a persistent teaching workspace in para/areas/learning/{topic}/ within the repo's PARA structure."
 disable-model-invocation: true
 argument-hint: "What would you like to learn about?"
 ---
@@ -9,7 +9,7 @@ The user has asked you to teach them something. This is a stateful request — t
 
 ## Teaching Workspace
 
-The teaching workspace lives at `areas/learning/{topic}/` in the repo's PARA structure. If it does not exist, create it. The state of their learning is captured in several files:
+The teaching workspace lives at `para/areas/learning/{topic}/` in the repo's PARA structure. If it does not exist, create it. The state of their learning is captured in several files:
 
 - `MISSION.md`: A document capturing the _reason_ the user is interested in the topic. This should be used to ground all teaching. Use the format in [MISSION-FORMAT.md](./references/MISSION-FORMAT.md).
 - `./reference/*.html`: A directory of reference materials. These are the compressed learnings from the lessons — cheat sheets, reference algorithms, syntax, glossaries. They are the raw units of learning. They should be beautiful documents which print out well, and are designed for quick reference.

@@ -13,7 +13,7 @@ The economics: an expensive, high-ceiling model does the part where intelligence
 
 ## Hard Rules
 
-1. **Never modify source code yourself.** The ONLY files you may create or modify live under `projects/{project-id}/` (plan artifacts) or `plans/` (when running a standalone audit).
+1. **Never modify source code yourself.** The ONLY files you may create or modify live under `para/projects/{project-id}/` (plan artifacts) or `plans/` (when running a standalone audit).
 2. **Never run commands that mutate the working tree** — no installs, no builds that write artifacts, no git commits, no formatters. Read, search, and run read-only analysis only.
 3. **Every plan must be fully self-contained.** The executor has not seen this conversation. If a plan references "the pattern discussed above," it is broken.
 4. **Never reproduce secret values.** Reference `file:line` and credential type only.
@@ -22,7 +22,7 @@ The economics: an expensive, high-ceiling model does the part where intelligence
 
 ## Context Detection
 
-You figure out what kind of plan to write from the project folder. Read `projects/{project-id}/` and infer:
+You figure out what kind of plan to write from the project folder. Read `para/projects/{project-id}/` and infer:
 
 | Artifacts present | Plan type | Input |
 |---|---|---|
@@ -40,11 +40,11 @@ If multiple artifacts exist, read them all and synthesize. The grill summary tel
 
 Map the territory before planning:
 
-- Read `AGENTS.md`, `areas/`, root config files, directory structure.
+- Read `AGENTS.md`, `para/areas/`, root config files, directory structure.
 - Identify: language(s), framework(s), how to build / test / lint / typecheck (exact commands).
 - Note repo conventions: code style, naming, folder layout, error-handling patterns. Plans must tell the executor to *match* these, with examples.
-- Read all existing project artifacts in `projects/{project-id}/`.
-- Read `resources/` for relevant prior knowledge.
+- Read all existing project artifacts in `para/projects/{project-id}/`.
+- Read `para/resources/` for relevant prior knowledge.
 - Check git signal where useful (`git log --oneline -20`, relevant file history).
 
 ### Phase 2 — Analyze
@@ -73,7 +73,7 @@ Map the territory before planning:
 
 For each plan, use the template in [references/plan-template.md](references/plan-template.md). Read it before writing.
 
-**Artifact path:** `projects/{project-id}/plan-{YYYY-MM-DD}.md`
+**Artifact path:** `para/projects/{project-id}/plan-{YYYY-MM-DD}.md`
 
 For standalone audits (no project folder), plans go in `plans/NNN-slug.md` with a `plans/README.md` index.
 
@@ -96,7 +96,7 @@ End the plan artifact with a "Next step" section:
 ## Next step
 
 - Recommended executor tier: {premium|mid|budget}
-- Recommended model: {from resources/model-registry.md}
+- Recommended model: {from para/resources/model-registry.md}
 - Estimated complexity: {S|M|L}
 - After implementation: run /review on this worktree
 ```
