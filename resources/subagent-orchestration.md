@@ -31,6 +31,25 @@ The body is the worker's system prompt and must point the worker at its skill (`
 
 **YAML hazard:** frontmatter is parsed as strict YAML. Quote any `description` containing a colon, or discovery crashes instead of skipping the file (see `resources/lessons/pi-role-yaml-frontmatter.md`).
 
+## Per-call model override
+
+Each call shape accepts an optional `model` field: `SubagentParams.model`
+(single mode), `TaskItem.model` (parallel), and `ChainItem.model` (chain). It
+overrides the role's frontmatter `model` for that one call.
+
+Precedence: a non-empty `model` (after trimming) wins; otherwise the role's
+frontmatter `model`; otherwise nothing is passed and pi uses its default.
+Empty or whitespace-only `model` means "no override". The effective model is
+recorded in the result's `model` field, so usage and cost reporting show what
+actually ran.
+
+The value is pure pass-through. The tool does not validate it; valid
+`provider/model` strings come from `pi --list-models`. A bad value is forwarded
+unchanged to `pi --model`; pi passes it to the provider, which rejects it
+(`model_not_found`), and the tool surfaces the failure as an error
+(`isError=true`, worker `stopReason=error`). `thinking` and `tools` are
+independent and unchanged.
+
 ## Worktree contract
 
 The orchestrator stays in the main checkout. Before delegating `implement`, it creates a worktree (`git worktree add ../<repo-dir>-{NNN}-{slug} -b {NNN}-{slug}`) and passes `cwd: <worktree>`. `implement` and `review` get the worktree cwd; `explore` and `plan` run with the default cwd (main checkout). Plan and prior artifacts must be committed before `implement`, so the worktree sees a coherent state.
