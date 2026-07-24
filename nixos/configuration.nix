@@ -151,6 +151,8 @@
         nixfmt
         git
         gh
+        # Dev-time JSDoc type checker for balaur; OS-provided so balaur stays dependency-free.
+        typescript
       ];
 
       # Symlink all pi extensions from nixpi.extensionsPath into pi's global
