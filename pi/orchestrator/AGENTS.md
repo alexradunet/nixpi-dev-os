@@ -83,6 +83,7 @@ These apply to all prose: artifacts, commit messages, docs, reviews, PR descript
 - Cap lists at five items. Past five, split into "do now / later" or "must / nice to have". Five ranked beats ten unranked.
 - Matter-of-fact tone for errors. State cause and fix: file, line, expected vs got. Never "Uh oh", "Oh no", "There seems to be a problem".
 - No empty hedges. Delete "perhaps", "might", "could possibly" when they add no information. Keep a hedge that carries real uncertainty; deleting it manufactures confidence.
+- No emoji in prose artifacts. Status emoji are allowed in responses and status surfaces only (see Response shape → Emoji as signal).
 
 Escape hatch: *"Break any of these rules sooner than say anything outright barbarous."* (Orwell, 1946)
 
@@ -98,6 +99,39 @@ The reader does not hold state between messages. Shape every response so it can 
 4. **Give specific time estimates.** Concrete units, pointed at whoever executes: "about 15 minutes if tests cover this; an afternoon if not." Never "some work" or "a bit of effort".
 5. **Make completed work visible.** State what now works, in concrete terms: "Login now works with magic links. Try: `npm run dev`, open `/login`." Do not bury wins in a recap.
 6. **End with one concrete next action.** If anything is left open, name one thing doable in under two minutes.
+7. **Mark git work.** If the turn ran git commands, end with an emoji status block: the most important operations, max 5 lines, format per "Emoji as signal" below. The block sits just above the final next-action line.
+
+### Emoji as signal
+
+Emoji are status markers, not decoration. A marker earns its place when it carries state that would otherwise cost words: the eye lands on status before reading prose. That is the point: ADHD-friendly scanning, state first, detail second.
+
+Fixed vocabulary, same meaning every turn:
+
+| Emoji | Meaning |
+|---|---|
+| ✅ | done / passed |
+| ❌ | failed |
+| ⚠️ | warning / blocked / needs human |
+| 🔀 | git topology: branch, merge, rebase, worktree |
+| 📦 | archive |
+| 🧪 | test run |
+| 🚀 | push / deploy |
+| 🗑️ | delete / cleanup |
+
+- One marker at line start on status lines. Never mid-sentence, never two on one line.
+- Marker states outcome, words name the target: `✅ commit a1b2c3d "add rule"`, not `✅ commit succeeded`.
+- Prefer a marker over words when unambiguous: `✅ 14 tests` beats "all 14 tests passed".
+- Prose artifacts (specs, plans, docs, commit messages) stay emoji-free. Markers live in responses and status surfaces.
+
+Git status block (rule 7), max 5 lines, most important first:
+
+```
+🔀 branch 042-emoji-display created off main
+✅ commit a1b2c3d "add status block rule"
+🧪 tests 12/12 passed
+📦 worktree 041-old-feature archived
+⚠️ merge conflict in para/projects/042/spec.md, human resolves
+```
 
 ### When to break these rules
 
@@ -113,7 +147,7 @@ Nothing in this section overrides the "What you never do" list, the confirm-befo
 
 ### Pre-send verify
 
-Read only the first and last line of the response. They must tell the reader (a) what to do next and (b) what just happened. If not, fix those two lines before sending.
+Read only the first and last line of the response. They must tell the reader (a) what to do next and (b) what just happened. If not, fix those two lines before sending. If the turn ran git, the emoji status block sits just above the last line.
 
 ## Your job
 
