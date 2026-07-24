@@ -5,11 +5,11 @@ Self-hosted **development environment** for remote Pi-based development over SSH
 ## Layout
 
 ```
-nixos_dev_env/                          NixOS system configuration (flake + modules)
+nixos/                                  NixOS system configuration (flake + modules)
   flake.nix                             Pins nixpkgs and llm-agents (Pi)
   configuration.nix                     SSH, fail2ban, firewall, user, locales, pi extension install
   hardware-configuration.nix            Host filesystems and kernel modules
-pi_extensions/                          Pi extensions
+pi/                                     Pi extensions
   orchestrator/                         Orchestration extension: subagent tool + skills + roles + playbook + registry template
     index.ts                            subagent delegation tool; serves skills; injects the playbook
     agents.ts                           Role discovery (bundled roles/ + user + project)
@@ -38,21 +38,21 @@ ssh -p 22222 -R 9090:localhost:3000 balaur@<host-ip>   # remote forward
 
 ```bash
 cd /home/balaur/projects/nixpi-dev-os
-sudo nixos-rebuild switch --flake ./nixos_dev_env
+sudo nixos-rebuild switch --flake ./nixos
 ```
 
 Update the Pi pin with:
 
 ```bash
-nix flake update llm-agents --flake ./nixos_dev_env
-sudo nixos-rebuild switch --flake ./nixos_dev_env
+nix flake update llm-agents --flake ./nixos
+sudo nixos-rebuild switch --flake ./nixos
 ```
 
 ## The orchestrator extension (pi discovery)
 
-The orchestration ships as a single pi extension at `pi_extensions/orchestrator/` and is installed **globally** so it is available in every repository. On every rebuild, the activation script in `nixos_dev_env/configuration.nix` (driven by `nixpi.extensionsPath` in `flake.nix`) symlinks it into pi's global instance:
+The orchestration ships as a single pi extension at `pi/orchestrator/` and is installed **globally** so it is available in every repository. On every rebuild, the activation script in `nixos/configuration.nix` (driven by `nixpi.extensionsPath` in `flake.nix`) symlinks it into pi's global instance:
 
-- `pi_extensions/*` → `~/.pi/agent/extensions/*`
+- `pi/*` → `~/.pi/agent/extensions/*`
 
 The extension bundles everything the orchestration needs and resolves it all relative to its own directory:
 
@@ -66,7 +66,7 @@ In-session phases (grill, teach, janitor) have no role file; invoke their skills
 ## Testing
 
 ```bash
-pi --no-extensions -e ./pi_extensions/orchestrator/index.ts -p --no-session "Reply with exactly: ok"
+pi --no-extensions -e ./pi/orchestrator/index.ts -p --no-session "Reply with exactly: ok"
 ```
 
 The extension is vendored from pi's official subagent example with local patches (thinking levels, worker nesting guard, bundled role discovery, skill serving, playbook injection); the real test is delegation itself.

@@ -4,7 +4,7 @@ From project `003-orchestrator-extension` (2026-07-24).
 
 ## What happened
 
-The project renamed `pi_extensions/subagent/` to `pi_extensions/orchestrator/`,
+The project renamed `pi/subagent/` to `pi/orchestrator/`,
 moved the skills out of `pi_skills/`, and bundled the roles, deleting the
 `skillsPath`/`rolesPath` activation scripts. After the merge, the old global
 symlinks were still there: `~/.pi/agent/extensions/subagent`, the seven

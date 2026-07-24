@@ -4,7 +4,7 @@ How this repo delegates autonomous work to spawned pi workers. Source: project `
 
 ## The mechanism
 
-The `subagent` tool (a patched copy of pi's official example at `pi_extensions/orchestrator/`) runs each delegation as a **one-shot `pi` subprocess** (`pi --mode json -p --no-session`) with an isolated context window. Task in, artifact out. Workers are stateless pure functions of (brief, committed repo state).
+The `subagent` tool (a patched copy of pi's official example at `pi/orchestrator/`) runs each delegation as a **one-shot `pi` subprocess** (`pi --mode json -p --no-session`) with an isolated context window. Task in, artifact out. Workers are stateless pure functions of (brief, committed repo state).
 
 Workers spawn with `NIXPI_WORKER=1` in their environment; the extension factory skips registering the spawner tool when that var is set (no nesting), but still serves the skills and injects the playbook, so workers get the methodology. The tool also injects `NIXPI_SKILLS_DIR` into the worker env.
 
@@ -17,7 +17,7 @@ The filesystem is the contract: a phase is spawnable **iff** its role file exist
 
 ## Role format
 
-`pi_extensions/orchestrator/roles/{name}.md`, bundled in the extension. Frontmatter:
+`pi/orchestrator/roles/{name}.md`, bundled in the extension. Frontmatter:
 
 ```yaml
 name: review
@@ -56,11 +56,11 @@ The orchestrator stays in the main checkout. Before delegating `implement`, it c
 
 ## Adding a spawnable role
 
-Drop `{name}.md` into `pi_extensions/orchestrator/roles/` and rebuild. The tool discovers it from the bundled `roles/` directory.
+Drop `{name}.md` into `pi/orchestrator/roles/` and rebuild. The tool discovers it from the bundled `roles/` directory.
 
 ## Maintenance
 
-On pi version bumps, diff `pi_extensions/orchestrator/` against the new store's example and re-apply the four local patches (they must stay the only behavioral diff):
+On pi version bumps, diff `pi/orchestrator/` against the new store's example and re-apply the four local patches (they must stay the only behavioral diff):
 
 1. `agents.ts` — `thinking` frontmatter support; bundled `roles/` discovery (`"bundled"` source via `import.meta.url`).
 2. `index.ts` — pass `--thinking <level>`; set `NIXPI_WORKER=1` and `NIXPI_SKILLS_DIR` in the spawn env.

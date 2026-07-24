@@ -11,7 +11,7 @@ branch: 003-orchestrator-extension
 # Implementation: Package the orchestration as a single pi extension
 
 Collapsed the three NixOS install mechanisms (extensionsPath, skillsPath,
-rolesPath) into one pi extension at `pi_extensions/orchestrator/`. The
+rolesPath) into one pi extension at `pi/orchestrator/`. The
 extension serves skills via `resources_discover`, discovers bundled roles,
 injects the generalized playbook via `before_agent_start`, and injects
 `NIXPI_SKILLS_DIR` into spawned workers.
@@ -45,27 +45,27 @@ injects the generalized playbook via `before_agent_start`, and injects
 
 ## Files changed
 
-- `pi_extensions/subagent/` → `pi_extensions/orchestrator/` (renamed; `index.ts`
+- `pi/subagent/` → `pi/orchestrator/` (renamed; `index.ts`
   and `agents.ts` edited).
-- `pi_extensions/orchestrator/index.ts` — `node:url` import; `EXTENSION_DIR`/
+- `pi/orchestrator/index.ts` — `node:url` import; `EXTENSION_DIR`/
   `SKILLS_DIR`/`PLAYBOOK_PATH` + `loadPlaybook()`; `SingleResult.agentSource`
   gains `"bundled"`; worker env gains `NIXPI_SKILLS_DIR`; factory registers
   `resources_discover` + `before_agent_start` for every session, then gates only
   the `subagent` tool behind `NIXPI_WORKER`.
-- `pi_extensions/orchestrator/agents.ts` — `node:url` import; `source` and
+- `pi/orchestrator/agents.ts` — `node:url` import; `source` and
   `loadAgentsFromDir` gain `"bundled"`; `discoverAgents` loads bundled `roles/`
   (via `import.meta.url`) as the base layer for every scope.
-- `pi_extensions/orchestrator/AGENTS.md` — new generalized playbook (cwd-relative,
+- `pi/orchestrator/AGENTS.md` — new generalized playbook (cwd-relative,
   composes with repo-local `AGENTS.md`).
-- `pi_extensions/orchestrator/model-registry-template.md` — new seed template.
-- `pi_extensions/orchestrator/skills/` — 7 skills moved verbatim from `pi_skills/`
+- `pi/orchestrator/model-registry-template.md` — new seed template.
+- `pi/orchestrator/skills/` — 7 skills moved verbatim from `pi_skills/`
   (0-line diffs).
-- `pi_extensions/orchestrator/roles/{explore,plan,implement,review}.md` — moved
+- `pi/orchestrator/roles/{explore,plan,implement,review}.md` — moved
   from `.pi/agents/`; bodies generalized to `$NIXPI_SKILLS_DIR` + "orchestration
   playbook"; frontmatter unchanged.
-- `nixos_dev_env/configuration.nix` — removed `skillsPath`/`rolesPath` options and
+- `nixos/configuration.nix` — removed `skillsPath`/`rolesPath` options and
   the `pi-skills`/`pi-roles` activation scripts; kept `extensionsPath`/`pi-extensions`.
-- `nixos_dev_env/flake.nix` — removed the `nixpi.skillsPath`/`nixpi.rolesPath` lines.
+- `nixos/flake.nix` — removed the `nixpi.skillsPath`/`nixpi.rolesPath` lines.
 - `AGENTS.md` (root) — deleted.
 - `README.md`, `resources/subagent-orchestration.md` — updated to the extension layout.
 
@@ -91,13 +91,13 @@ the nesting guard `if (process.env.NIXPI_WORKER === "1") return;` (L489) now
 ### Step 8 — NixOS config
 
 `nixfmt --check` exit 0. `nix eval
-./nixos_dev_env#nixosConfigurations.nixos.config.system.build.toplevel.drvPath`
+./nixos#nixosConfigurations.nixos.config.system.build.toplevel.drvPath`
 → `/nix/store/fi1ww9c5g4f3l9570y31gabz63bg4laf-nixos-system-nixos-26.11.20260719.241313f.drv`,
 exit 0 (benign untrusted-substituter warnings ignored per plan).
 
 ### Step 10 — live smoke tests (isolated via `--no-extensions`)
 
-1. **Loads:** `pi --no-extensions -e ./pi_extensions/orchestrator/index.ts ... "Reply with exactly: ok"` → `ok`.
+1. **Loads:** `pi --no-extensions -e ./pi/orchestrator/index.ts ... "Reply with exactly: ok"` → `ok`.
 2. **Playbook injected:** asked for the pipeline phases → model listed
    grill, explore, plan, implement, review, teach, janitor (bundled `AGENTS.md` appended).
 3. **Bundled roles discovered:** default scope listed
@@ -112,7 +112,7 @@ exit 0 (benign untrusted-substituter warnings ignored per plan).
 
 ### Step 11 — reconciliation
 
-`git status --short` clean. `git ls-files pi_extensions/orchestrator/` lists all
+`git status --short` clean. `git ls-files pi/orchestrator/` lists all
 22 files (AGENTS.md, agents.ts, index.ts, model-registry-template.md, 4 roles,
 7 SKILL.md + plan/teach references). `git log --oneline -5` shows the four
 logical commits (A `f0e7991`, B `b8b941d`, C `a4c2943`, D `1d3fb6b`).
@@ -135,7 +135,7 @@ Two benign observations, both consistent with the plan:
 
 ## Done criteria checklist
 
-- [x] PASS — `pi_extensions/orchestrator/` contains index.ts, agents.ts, AGENTS.md,
+- [x] PASS — `pi/orchestrator/` contains index.ts, agents.ts, AGENTS.md,
       model-registry-template.md, 4 roles, 7 skills (+ plan/teach references), all tracked.
 - [x] PASS — `pi_skills/` and `.pi/agents/` no longer exist in the worktree.
 - [x] PASS — root `AGENTS.md` deleted (`git rm`).
@@ -144,7 +144,7 @@ Two benign observations, both consistent with the plan:
       injects `NIXPI_SKILLS_DIR`, keeps tool named `subagent`, gates only the tool.
 - [x] PASS — `agents.ts` loads bundled `roles/` via `import.meta.url` as base layer;
       `"bundled"` at all three type sites.
-- [x] PASS — no `skillsPath`/`rolesPath`/`pi-skills`/`pi-roles` in `nixos_dev_env/`;
+- [x] PASS — no `skillsPath`/`rolesPath`/`pi-skills`/`pi-roles` in `nixos/`;
       `extensionsPath` + `pi-extensions` remain; `nix eval` succeeded.
 - [x] PASS — no stale paths in `README.md` / `resources/subagent-orchestration.md`.
 - [x] PASS — orchestrator `AGENTS.md` has 0 project-specific paths; compose note,

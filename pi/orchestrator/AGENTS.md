@@ -136,7 +136,7 @@ When the user opens a session:
 
 ## Skills and roles
 
-The orchestration ships as a single pi extension (`orchestrator`), installed globally (the NixOS config symlinks `pi_extensions/*` into `~/.pi/agent/extensions/` on rebuild) so it is available in every repository. It bundles the skills, the subagent roles, this playbook, and the model-registry seed template; everything resolves relative to the extension's own directory.
+The orchestration ships as a single pi extension (`orchestrator`), installed globally (the NixOS config symlinks `pi/*` into `~/.pi/agent/extensions/` on rebuild) so it is available in every repository. It bundles the skills, the subagent roles, this playbook, and the model-registry seed template; everything resolves relative to the extension's own directory.
 
 Two layers, kept separate:
 

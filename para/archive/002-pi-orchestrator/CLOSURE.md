@@ -8,7 +8,7 @@ status: complete
 
 ## What was built
 
-Worker orchestration now runs through pi's own `subagent` tool (a patched copy of the official example at `pi_extensions/subagent/`) instead of an external herdr daemon. Delegations are one-shot `pi` subprocesses configured by role files; four phases are spawnable (explore, plan, implement, review) and three run in-session (grill, teach, janitor). herdr was removed entirely: binary, integration file, bridge extension, flake input/activation, and stale global symlinks.
+Worker orchestration now runs through pi's own `subagent` tool (a patched copy of the official example at `pi/subagent/`) instead of an external herdr daemon. Delegations are one-shot `pi` subprocesses configured by role files; four phases are spawnable (explore, plan, implement, review) and three run in-session (grill, teach, janitor). herdr was removed entirely: binary, integration file, bridge extension, flake input/activation, and stale global symlinks.
 
 ## What was distilled
 

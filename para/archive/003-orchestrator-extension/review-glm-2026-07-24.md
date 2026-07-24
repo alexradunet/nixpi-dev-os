@@ -11,7 +11,7 @@ branch: 003-orchestrator-extension
 verdict: approved
 ---
 
-# Review: Package the orchestration as a single pi extension (`pi_extensions/orchestrator/`)
+# Review: Package the orchestration as a single pi extension (`pi/orchestrator/`)
 
 Independent second-opinion review (glm-5.2). I did not read the other review
 artifact on this branch; I judged the work on its own merits against the plan
@@ -40,7 +40,7 @@ criterion holds. No out-of-scope file was touched. No code defect found.
 | Step 6 (orchestrator `AGENTS.md`, Commit B) | pass | 0 project-specific paths; `composes with`, `pi --list-models --offline`, `NIXPI_SKILLS_DIR` all present. |
 | Step 7 (registry template, Commit B) | pass | all four sections (`Complexity rubric`, `Active models`, `Phase defaults`, `Notes`) present; mirrors `resources/model-registry.md` structure. |
 | Step 8 (NixOS config, Commit C `a4c2943`) | pass | `skillsPath`/`rolesPath`/`pi-skills`/`pi-roles` gone; `extensionsPath` option (L20) + `pi-extensions` script (L153) kept; `nixfmt --check` exit 0; `nix eval …toplevel.drvPath` → `/nix/store/fi1ww9c5…nixos-system-nixos-…drv`, exit 0. |
-| Step 9 (delete root `AGENTS.md`; docs, Commit D `1d3fb6b`) | pass | root `AGENTS.md` gone; `README.md` + `resources/subagent-orchestration.md` have no `pi_skills/`/`.pi/agents`/`pi_extensions/subagent`/`skillsPath`/`rolesPath`/`~/.pi/agent/skills`/`~/.pi/agent/agents` refs. |
+| Step 9 (delete root `AGENTS.md`; docs, Commit D `1d3fb6b`) | pass | root `AGENTS.md` gone; `README.md` + `resources/subagent-orchestration.md` have no `pi_skills/`/`.pi/agents`/`pi/subagent`/`skillsPath`/`rolesPath`/`~/.pi/agent/skills`/`~/.pi/agent/agents` refs. |
 | Step 10 (smoke tests) | pass | (1) `Reply with exactly: ok` → `ok`. (2) pipeline phases → idea/grill/explore/plan/implement/review/teach/janitor (playbook injected). (3) see D2 below — deterministic proof supersedes the model-driven variant. |
 | Step 11 (reconciliation) | pass | `git status` clean; 22 orchestrator files tracked; 4 logical commits present. |
 | **D1 — narrowed nesting guard** | pass | see "D1" below. |
@@ -53,7 +53,7 @@ criterion holds. No out-of-scope file was touched. No code defect found.
 
 ### D1 — narrowed nesting guard (no recursion; workers get methodology)
 
-`pi_extensions/orchestrator/index.ts:478-489`:
+`pi/orchestrator/index.ts:478-489`:
 
 ```ts
 export default function (pi: ExtensionAPI) {
@@ -129,7 +129,7 @@ all both-scope: review(project), implement(user), plan(user), explore(user)
   playbook" — no dangling `~/.pi/agent/skills` or `nixpi-dev-os` references
   (`grep` clean). ✅
 - Frontmatter byte-identical: `git show 180c348:.pi/agents/<role>.md` vs
-  `pi_extensions/orchestrator/roles/<role>.md` — the `---` block matches exactly
+  `pi/orchestrator/roles/<role>.md` — the `---` block matches exactly
   for all 4 (I diffed the first 6 lines of each). The diffs for `implement.md`
   and `review.md` show `rename from`/`rename to` with body-only `+`/`-` lines
   starting after the closing `---`. `explore.md` and `plan.md` render as
@@ -139,7 +139,7 @@ all both-scope: review(project), implement(user), plan(user), explore(user)
 
 ### Generalized playbook
 
-`diff <(git show 180c348:AGENTS.md) pi_extensions/orchestrator/AGENTS.md` shows
+`diff <(git show 180c348:AGENTS.md) pi/orchestrator/AGENTS.md` shows
 **only** the intended generalizations: title rename; the new "composes with"
 intro paragraph; `.pi/agents` → `roles/`; `pi_skills/{name}/SKILL.md` →
 `skills/{name}/SKILL.md inside the extension` (+ `resources_discover` +
@@ -153,15 +153,15 @@ Structure/Errors/Tests/Formatting), Writing standards, Your job, The pipeline,
 Decision threshold, On session start, When the user describes a new idea, Skills
 and roles, When the user says "go", When the user comes back, Model
 recommendation, Teaching moments, PARA, What you never do. `grep -c
-'nixpi-dev-os\|nixos_dev_env\|extensionsPath\|skillsPath\|rolesPath\|pi_skills/'
+'nixpi-dev-os\|nixos\|extensionsPath\|skillsPath\|rolesPath\|pi_skills/'
 orchestrator/AGENTS.md` → 0. ✅
 
 ## Standards findings
 
 - `[hard]` **none.** No documented repo rule is broken by this diff.
-- `[judgement]` `pi_extensions/orchestrator/index.ts:239,369,511` (and
+- `[judgement]` `pi/orchestrator/index.ts:239,369,511` (and
   `agents.ts`) — three `any` usages appear in the added lines of the rename diff.
-  Verified pre-existing in `180c348:pi_extensions/subagent/index.ts` (lines 74,
+  Verified pre-existing in `180c348:pi/subagent/index.ts` (lines 74,
   204, 346) and **not** touched by this change (`diff` of old vs new shows no
   `any`-bearing line changed). The plan explicitly scopes edits to four regions;
   fixing pre-existing `any` would be out of scope. Noting for completeness, not

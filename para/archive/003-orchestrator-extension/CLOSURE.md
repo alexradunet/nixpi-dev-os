@@ -10,7 +10,7 @@ status: complete
 
 The orchestration (7 skills, 4 subagent roles, the AGENTS.md playbook, the
 `subagent` delegation tool, and a model-registry seed template) now ships as one
-pi extension at `pi_extensions/orchestrator/`, installed globally via the single
+pi extension at `pi/orchestrator/`, installed globally via the single
 NixOS `extensionsPath` mechanism. The extension serves skills via
 `resources_discover`, discovers bundled roles (a new `"bundled"` source, lowest
 precedence), injects the generalized playbook via `before_agent_start`, and

@@ -36,6 +36,6 @@ right hook for non-accumulating system-prompt injection.
 
 ## The fix used
 
-`pi_extensions/orchestrator/index.ts` returns `{ skillPaths: [SKILLS_DIR] }` from
+`pi/orchestrator/index.ts` returns `{ skillPaths: [SKILLS_DIR] }` from
 `resources_discover` (one directory, all 7 skills) and appends the bundled
 playbook in `before_agent_start`. No glob fallback was needed.

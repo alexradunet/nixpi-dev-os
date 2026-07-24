@@ -36,7 +36,7 @@
                 "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPOkyb6k2hdZHcP2gPb24NEroog7e26xA3IKGKkcv8qe u0_a478@localhost"
                 "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFt+nhmaiEg0M2jcqfUVfOit/2tem32Tsu0FnszLjmYC alex@laptop"
               ];
-              nixpi.extensionsPath = "/home/balaur/projects/nixpi-dev-os/pi_extensions";
+              nixpi.extensionsPath = "/home/balaur/projects/nixpi-dev-os/pi";
 
               environment.systemPackages = [
                 llm-agents.packages.${system}.pi

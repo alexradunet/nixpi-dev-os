@@ -4,7 +4,7 @@ From project `002-pi-orchestrator` (2026-07-24).
 
 ## What happened
 
-The implementation plan assumed `.pi/agents/` (the orchestration role files) existed in the worktree. It did not. The roles were never `git add`-ed, so they were absent from any worktree built from HEAD, and edits to them could not be committed or reviewed on a branch. `pi_skills/` and `pi_extensions/` were tracked; only `.pi/` was missed.
+The implementation plan assumed `.pi/agents/` (the orchestration role files) existed in the worktree. It did not. The roles were never `git add`-ed, so they were absent from any worktree built from HEAD, and edits to them could not be committed or reviewed on a branch. `pi_skills/` and `pi/` were tracked; only `.pi/` was missed.
 
 ## The rule
 
