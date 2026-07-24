@@ -161,8 +161,8 @@ Read only the first and last line of the response. They must tell the reader (a)
 ```
 grill (in-session, absorbs explore)
   → spec → domain-model → plan → tickets        (sequential, spawned, current checkout)
-    → implement × N → review-standards × N      (parallel per ticket, spawned, worktrees)
-      → integrate (conditional)                  (merge ticket branches; see orchestration loop)
+    → implement × N → review-standards × N      (per ticket, spawned, one feature worktree)
+      → integrate                               (merge the feature branch to main)
         → review-feature (spawned, two-axis)
           → domain-model-close (spawned, reconcile mode)
 ```
@@ -224,7 +224,7 @@ Outside a Paseo session, `paseo run` creates a top-level agent in a new workspac
     WS=$(paseo workspace ls --json | python3 -c 'import json,sys,os;print(next(w["workspaceId"] for w in json.load(sys.stdin) if w["cwd"]==os.getcwd()))')
     paseo run --workspace "$WS" ...
 
-implement and review always pass `--workspace` explicitly (the worktree workspace they create or reuse), so they are unaffected by this edge case.
+implement and review always pass `--workspace` explicitly (the feature worktree workspace, created once per project), so they are unaffected by this edge case.
 
 ## On session start
 
@@ -285,9 +285,9 @@ paseo run --wait-timeout 30m \
 
 It blocks until the worker finishes and returns the structured summary (`status`, `artifact_path`, `summary`). Read the artifact at `artifact_path`. Run these four in order; each reads the artifact the phase before it wrote.
 
-**implement (background, new worktree workspace):**
+**implement (background, one feature workspace):**
 
-Confirm the plan and prior artifacts are **committed**, then create the worktree workspace and spawn in the background (read the field names from the `--json` output; they are `workspaceId` and `agentId` as of paseo 0.2.0-beta.4):
+Confirm the plan and prior artifacts are **committed**, then create the feature worktree workspace **once per project** and spawn every ticket's worker into it (read the field names from the `--json` output; they are `workspaceId` and `agentId` as of paseo 0.2.0-beta.4):
 
 ```
 WS=$(paseo workspace create --isolation worktree --mode branch-off \
@@ -299,6 +299,8 @@ ID=$(paseo run --background --workspace "$WS" \
   "<composed briefing>" | python3 -c 'import json,sys;print(json.load(sys.stdin)["agentId"])')
 ```
 
+Reuse `$WS` for every ticket in the project; never create a second worktree. Topology is `main → {NNN}-{slug}`, one layer. For a resumed project whose workspace already exists, resolve `$WS` from `paseo workspace ls --json` matched on the worktree path instead of creating it.
+
 Then either block on it (`paseo wait "$ID"`) or free the session with a self-heartbeat so you report back when the worker lands:
 
 ```
@@ -307,25 +309,29 @@ paseo heartbeat create "Check worker $ID: run paseo inspect $ID --json. If Statu
 
 Implement runs once per ticket, driven by the orchestration loop below.
 
-**review-standards (foreground, the ticket worktree):**
+**review-standards (foreground, the feature workspace):**
 
-Run it in the same worktree workspace as the implement it reviews: `paseo run --wait-timeout 30m --output-schema ~/.pi/agent/extensions/orchestrator/worker-output-schema.json --workspace "$WS" --provider <provider/model> --thinking high "<briefing>"` (reuse the implement's workspace id, or resolve it from `paseo workspace ls --json` matched on the worktree path). `review-feature` uses the same foreground form on the assembled feature's workspace.
+Run it in the same feature workspace as the implement it reviews: `paseo run --wait-timeout 30m --output-schema ~/.pi/agent/extensions/orchestrator/worker-output-schema.json --workspace "$WS" --provider <provider/model> --thinking high "<briefing>"`, and pass the ticket's diff range in the briefing (the commit SHAs from its implement artifact). `review-feature` uses the same foreground form on the same workspace, diffing the whole feature branch against `main`.
 
-**Parallel implement orchestration loop:**
+**Implement orchestration loop:**
 
-After `tickets` exists, the orchestrator drives implement and review per ticket:
+After `tickets` exists, the orchestrator drives implement and review per ticket, all inside the one feature workspace:
 
 1. Scan `para/projects/{NNN}/tickets/*.md`; parse each ticket's `status` and `blocked-by`. The **frontier** = tickets whose `status` is `ready` and whose blockers are all `done`.
-2. If any ticket has `shared-blast-radius: true`, create one integration branch `{NNN}-{slug}` and branch every ticket off it; otherwise branch each ticket off `main` as `{NNN}-{slug}/ticket-{NN}`.
-3. For each frontier ticket: create its worktree workspace, set `worker` and `branch` in the ticket frontmatter, set `status: in-progress`, and spawn an implement worker in the background (the implement spawn form above). Update the ticket to `status: review` when its worker lands.
-4. For each ticket that reaches `review`: spawn a `review-standards` worker in that ticket's worktree. On `verdict: approved`, set the ticket `status: done`; on `changes-requested`, `paseo send` the fix list to the implement worker (do not spawn a new one) and re-review.
+2. Create the feature worktree workspace `{NNN}-{slug}` once, branched off `main` (the implement spawn form above), or reuse it if it exists. Every ticket commits to this one branch. No per-ticket branches, no worktree inside the worktree.
+3. Schedule the frontier:
+   - **Parallel** — if no frontier ticket has `shared-blast-radius: true`, spawn one implement worker per frontier ticket in the background, all into `$WS`. Each briefing must say siblings are active: stage only its own paths (`git add <paths>`, never `git add -A`/`git commit -a`) and verify only its ticket's tests.
+   - **Sequential** — otherwise, or whenever in doubt, spawn one frontier ticket at a time and wait for it to land before the next.
+   For each spawned ticket, set `worker` and `branch` (`{NNN}-{slug}`) in the ticket frontmatter and `status: in-progress`; update to `status: review` when its worker lands.
+4. For each ticket that reaches `review`: wait until no sibling implement worker has uncommitted changes in the tree, then spawn a `review-standards` worker in `$WS` with the ticket's diff range. On `verdict: approved`, set the ticket `status: done`; on `changes-requested`, `paseo send` the fix list to the implement worker (do not spawn a new one) and re-review.
 5. Repeat 1–4 until every ticket is `done`.
-6. **Integrate**: if an integration branch was used, the final integrate-and-verify ticket (emitted by the tickets worker) merges and tests end-to-end. If independent branches were used, merge each ticket branch to `main` and run the suite; stop and report on conflict (human resolves). After each ticket branch is merged, archive its ephemeral worktree workspace (`paseo workspace archive "$WS"`) and delete the merged ref (`git branch -d {NNN}-{slug}/ticket-{NN}`) so the Workspaces panel stays clean. These workspaces exist only to give the worker an isolated checkout; the daemon also auto-prunes them once the worker closes, so archiving is belt-and-braces that also frees the worktree dir and branch ref deterministically.
-7. Spawn `review-feature` (two-axis) on the assembled feature, then `domain-model` in `reconcile` mode (domain-model-close).
+6. **Integrate**: merge `{NNN}-{slug}` into `main` and run the full suite; stop and report on conflict (human resolves).
+7. Spawn `review-feature` (two-axis) in `$WS` on the assembled feature, then `domain-model` in `reconcile` mode (domain-model-close).
+8. Archive the feature workspace (`paseo workspace archive "$WS"`) and delete the merged ref (`git branch -d {NNN}-{slug}`) so the Workspaces panel stays clean. The daemon also auto-prunes a workspace once its last agent closes; archiving explicitly frees the worktree dir and branch ref deterministically.
 
-6. Tell the user: "Delegated via Paseo (agent <ID>). I'll read the artifact when it's idle."
+After each spawn, tell the user: "Delegated via Paseo (agent <ID>). I'll read the artifact when it's idle."
 
-**Workspace hygiene (Paseo 0.2.0-beta.4).** An agent's working directory *is* its workspace's working directory: `paseo run --cwd` is ignored, and `--worktree-*` flags require `--new-workspace worktree`, so a worker's cwd can never be decoupled from its workspace. Consequence: parallel git workers need parallel checkouts, and parallel checkouts need distinct workspaces — you cannot cram concurrent implement workers into one workspace to keep the panel tidy. The layout that works is one **project workbench** workspace (created once per project, e.g. `{NNN}-{slug}`) that hosts the sequential foreground phases (spec, domain-model, plan, tickets) and acts as the merge home, plus one ephemeral worktree workspace per parallel ticket, branched off the workbench (or off `main`) and archived the moment its branch merges (step 6). `paseo workspace ls` lists only *active* workspaces, and the daemon auto-archives a workspace when its last agent closes, so a finished wave collapses to just the workbench entry on its own — archive explicitly anyway, per step 6, so the worktree dir and branch ref are freed deterministically. Probe or manual worktrees left behind outside Paseo are removed with `git worktree remove` + `git branch -d`.
+**Workspace hygiene (Paseo 0.2.0-beta.4).** An agent's working directory *is* its workspace's working directory: `paseo run --cwd` is ignored, and `--worktree-*` flags require `--new-workspace worktree`, so a worker's cwd can never be decoupled from its workspace. The layout that works is one **feature workspace** per project: a single worktree `{NNN}-{slug}` branched off `main` that hosts every spawned phase that touches source (implement, review-standards, review-feature) and is archived once the feature merges (loop step 8). Topology stays one layer, `main → feature worktree`; never a worktree inside a worktree. Parallel implement workers share that one checkout, so they may run concurrently only on file-disjoint tickets (no `shared-blast-radius` between them), each staging only its own paths; anything overlapping runs sequentially. `paseo workspace ls` lists only *active* workspaces, and the daemon auto-archives a workspace when its last agent closes — archive explicitly anyway so the worktree dir and branch ref are freed deterministically. Probe or manual worktrees left behind outside Paseo are removed with `git worktree remove` + `git branch -d`.
 
 ## Model registry (per-repo, auto-seeded)
 
@@ -383,4 +389,5 @@ This repo uses PARA:
 - Never let a worker spawn workers (flat-spawn policy); redirect an existing worker with `paseo send` instead.
 - Never spawn an implement worker for a ticket whose blockers are not all done.
 - Never edit a ticket's frontmatter `status` by hand to skip the frontier — the frontier is computed from the files.
-- Never try to run parallel git workers inside a single workspace to keep the Workspaces panel tidy — an agent's cwd is its workspace's cwd, so concurrent checkouts require concurrent workspaces; keep the panel clean by archiving each ticket workspace after its branch merges instead.
+- Never create a worktree inside a worktree. Topology is `main → one feature worktree`, one layer; every ticket commits to the feature branch in the feature workspace.
+- Never run parallel implement workers on tickets that touch the same files (`shared-blast-radius: true`). Parallel is for file-disjoint frontier tickets only, and each parallel worker stages only its own paths (`git add <paths>`, never `git add -A`).

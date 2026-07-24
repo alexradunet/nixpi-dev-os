@@ -16,7 +16,7 @@ You break an approved plan into vertical tracer-bullet tickets. Each ticket is o
 3. Draft vertical tracer-bullet slices using the rules in [Ticket format](#ticket-format) below. Wide refactors are the exception: sequence them as expand, migrate, contract, not as vertical slices.
 4. Quiz the user on granularity and blocking edges through the orchestrator relay. Report `blocked` with the proposed numbered breakdown and wait until the user approves. Do not write ticket files before approval.
 5. Write one file per ticket under `para/projects/{project-id}/tickets/`, numbered from `01` in dependency order (blockers first).
-6. Set `shared-blast-radius: true` on every ticket when two or more tickets touch the same files.
+6. Set `shared-blast-radius: true` on every ticket that shares in-scope files with any other ticket. The orchestrator reads this flag to schedule the frontier: file-disjoint tickets may run as parallel sub-agents in the one feature worktree; flagged tickets run sequentially.
 
 ## Ticket format
 

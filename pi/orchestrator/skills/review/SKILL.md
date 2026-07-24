@@ -14,7 +14,7 @@ If the prompt does not name a mode, ask. Do not guess.
 
 ## Gather context
 
-- Get the diff under review: `git diff {base}...HEAD` or as the prompt specifies.
+- Get the diff under review: `git diff {base}...HEAD` or as the prompt specifies. In standards mode diff exactly the ticket's commits (the range in the prompt or the `commit` SHA in its implement artifact); the branch tip and working tree may contain sibling tickets' work.
 - Read `AGENTS.md`, `para/areas/`, and `CONTRIBUTING.md` for documented repo conventions.
 - standards mode: read the ticket file and its implementation summary.
 - feature mode: read `para/projects/{project-id}/spec.md` in full.
