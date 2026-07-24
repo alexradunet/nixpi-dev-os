@@ -10,12 +10,13 @@ const ROLES = path.join(EXT, "roles");
 const SKILLS = path.join(EXT, "skills");
 
 // The pipeline-v2 contract (spec.md → Implementation Decisions). This set IS the
-// executable specification of which phases are spawnable.
+// executable specification of which phases are spawnable. plan writes the tickets
+// itself — the separate tickets phase was merged into plan (one context does recon,
+// design, and breakdown).
 const SPAWNABLE = [
 	"spec",
 	"domain-model",
 	"plan",
-	"tickets",
 	"implement",
 	"review-standards",
 	"review-feature",
@@ -28,7 +29,6 @@ const ROLE_SKILL: Record<string, string> = {
 	spec: "spec",
 	"domain-model": "domain-model",
 	plan: "plan",
-	tickets: "tickets",
 	implement: "implement",
 	"review-standards": "review",
 	"review-feature": "review",
