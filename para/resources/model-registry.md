@@ -15,15 +15,15 @@ The orchestrator reads this file to recommend models for each task phase.
 
 ## Active models
 
-| Model | Provider | Tier | Strength | Status |
-|-------|----------|------|----------|--------|
-| gpt-5.6-sol | openai-codex | premium | Deep reasoning, architecture, adversarial analysis | exhausted (no quota) |
-| gpt-5.6-terra | openai-codex | mid | Solid implementation, reliable planning | active |
-| gpt-5.6-luna | openai-codex | budget | Fast execution, follows plans literally | active |
-| qwen3.8-max-preview | qwen-token-plan | mid | Good all-rounder, strong at code | active |
-| qwen3.7-plus | qwen-token-plan | mid | Reliable implementation | active |
-| qwen3.6-flash | qwen-token-plan | budget | Cheap, fast, simple tasks | active |
-| glm-5.2 | qwen-token-plan | mid | Alternative perspective for reviews | active |
+| Model (paseo --provider value) | Tier | Strength | Status |
+|-------|------|----------|--------|
+| pi/openai-codex/gpt-5.6-sol | premium | Deep reasoning, architecture, adversarial analysis | exhausted (no quota) |
+| pi/openai-codex/gpt-5.6-terra | mid | Solid implementation, reliable planning | active |
+| pi/openai-codex/gpt-5.6-luna | budget | Fast execution, follows plans literally | active |
+| pi/qwen-token-plan/qwen3.8-max-preview | mid | Good all-rounder, strong at code | active |
+| pi/qwen-token-plan/qwen3.7-plus | mid | Reliable implementation | active |
+| pi/qwen-token-plan/qwen3.6-flash | budget | Cheap, fast, simple tasks | active |
+| pi/qwen-token-plan/glm-5.2 | mid | Alternative perspective for reviews | active |
 
 ## Phase defaults
 
@@ -39,11 +39,11 @@ The orchestrator reads this file to recommend models for each task phase.
 | teach | mid | premium (for deep topics) |
 | janitor | budget | mid |
 
-Spawned phases (delegated via the `subagent` tool; model comes from the role's frontmatter): explore, plan, implement, review. In-session phases (run on the orchestrator's own model): grill, teach, janitor.
+Spawned phases (delegated via `paseo run`; model comes from the role briefing's `provider` field): explore, plan, implement, review. In-session phases (run on the orchestrator's own model): grill, teach, janitor.
 
 ## Notes
 
-- As of 2026-07-23: `gpt-5.6-sol` has no quota. `qwen3.8-max-preview` (qwen-token-plan) is the global default and the effective top-tier model — recommend it wherever "premium" is called for until sol quota returns.
+- As of 2026-07-23: `gpt-5.6-sol` has no quota. `pi/qwen-token-plan/qwen3.8-max-preview` is the global default and the effective top-tier model — recommend it wherever "premium" is called for until sol quota returns.
 - Update this file when quota changes, new models become available, or benchmarks shift.
 - The orchestrator recommends; the user always confirms before spawn.
 - If a model's status is `exhausted` or `removed`, the orchestrator falls back to the next model in the same tier.
