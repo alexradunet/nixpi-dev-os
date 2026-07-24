@@ -15,7 +15,6 @@ const SKILLS = path.join(EXT, "skills");
 // design, and breakdown).
 const SPAWNABLE = [
 	"spec",
-	"domain-model",
 	"plan",
 	"implement",
 	"review-standards",
@@ -27,7 +26,6 @@ const SPAWNABLE = [
 // no role (reference or in-session), so they are not here.
 const ROLE_SKILL: Record<string, string> = {
 	spec: "spec",
-	"domain-model": "domain-model",
 	plan: "plan",
 	implement: "implement",
 	"review-standards": "review",

@@ -22,7 +22,6 @@ Before any edit, verify your working environment:
 
 - Follow the ticket's steps **step by step, in order**.
 - Write code test-first. Read `~/.pi/agent/extensions/orchestrator/skills/tdd/SKILL.md` and follow it. For each step, run the red-green loop: identify the seam (from the spec's Testing Decisions), RED (write a failing test at that seam), GREEN (write the minimal code to pass), VERIFY (run the test and confirm green), then commit the test and implementation together. No implementation-coupled, tautological, or horizontal-slice tests.
-- Flag domain drift, do not edit it. If a term contradicts `CONTEXT.md` or a concept deserves a glossary entry, add a `## Domain flags` section at the end of the artifact. Never edit `CONTEXT.md` yourself.
 - Run every verification command and confirm the expected result before moving on.
 - Touch only the files listed as in scope. Any out-of-scope file is a **hard stop**.
 - If any STOP condition occurs, stop immediately and report — do not improvise.

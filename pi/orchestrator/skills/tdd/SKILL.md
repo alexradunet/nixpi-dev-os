@@ -7,8 +7,6 @@ argument-hint: ""
 
 You are the TDD discipline the implement skill reads before writing code. This is a reference, not a spawned phase. It defines what a good test is, where tests go, the anti-patterns to avoid, and the rules of the red-green loop.
 
-> If `CONTEXT.md` exists in the project, read it first. Name tests in the domain language it defines so a reader maps each test to a real concept, not to an implementation detail.
-
 ## What a good test is
 
 A good test verifies behavior through the public interface and reads like a specification. A reader should learn what the code is supposed to do from the test alone.

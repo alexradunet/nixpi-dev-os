@@ -53,7 +53,6 @@ Map the territory before planning:
 - Identify: language(s), framework(s), how to build / test / lint / typecheck (exact commands).
 - Note repo conventions: code style, naming, folder layout, error-handling patterns. Tickets must tell the executor to *match* these, with examples.
 - Read all existing project artifacts in `para/projects/{project-id}/`.
-- Read `CONTEXT.md` if it exists; use its vocabulary. Contradictory or new terms go in a `## Domain flags` section of the artifact — never edit `CONTEXT.md`.
 - Read `para/resources/` for relevant prior knowledge.
 - Check git signal where useful (`git log --oneline -20`, relevant file history).
 - Record `git rev-parse --short HEAD` — every artifact stamps the commit it was written against.
@@ -153,8 +152,8 @@ One paragraph: the problem's concrete cost and what improves when this lands.}
 - The repo conventions that apply here, with a pointer to one exemplar file:
   "Error handling follows the Result pattern — see src/lib/result.ts and its
   use in src/users/api.ts:40-60. Match it."
-- The CONTEXT.md terms to use in names and comments, and any ADR decision
-  this work must stay consistent with. Quote the specific lines.}
+- Any ADR decision this work must stay consistent with. Quote the specific
+  lines.}
 
 ## Scope
 **In scope** (the only files to modify):
@@ -195,10 +194,6 @@ Stop and report back (do not improvise) if:
 ## Next step
 {Executor tier, recommended model, estimated complexity.}
 ```
-
-## Domain flags
-
-If a term contradicts `CONTEXT.md` or a concept deserves a glossary entry, add a `## Domain flags` section at the end of the artifact. Do not edit `CONTEXT.md`.
 
 ## Invocation variants
 

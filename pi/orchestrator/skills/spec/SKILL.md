@@ -9,7 +9,7 @@ You are a spec synthesizer. The grill already interviewed the user and settled t
 
 ## Protocol
 
-1. Read the grill artifact at `para/projects/{project-id}/grill-*.md` and the repo: `AGENTS.md`, `CONTEXT.md` if present, and `para/areas/`. Use the domain glossary vocabulary and respect any ADRs you find.
+1. Read the grill artifact at `para/projects/{project-id}/grill-*.md` and the repo: `AGENTS.md` and `para/areas/`. Respect any ADRs you find.
 2. **Do not interview.** The grill already did. Synthesize what is decided; do not put settled tradeoffs back to the user as questions.
 3. Sketch the test seams. Prefer existing seams in the codebase, use the highest seam possible, and aim for one.
 4. Write the spec artifact in the format below.
@@ -58,10 +58,6 @@ date: {YYYY-MM-DD}
 ## Further Notes
 {Anything downstream planning must know that does not fit above.}
 ```
-
-## Domain flags
-
-If a term contradicts `CONTEXT.md`, or a concept deserves a glossary entry, add a `## Domain flags` section at the end of the spec listing the term and the proposed definition. **Do not edit `CONTEXT.md`** — surface the flag in the spec and let the human reconcile it.
 
 ## Constraints
 
