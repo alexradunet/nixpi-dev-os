@@ -10,9 +10,9 @@
  *   browser_screenshot – take a screenshot, returns image content
  *
  * Setup:
- *   cd pi/agent-browser && npm install
- *   ./node_modules/.bin/agent-browser install   # downloads Chrome
- *   Symlink this dir into ~/.pi/agent/extensions/
+ *   NixOS: agent-browser is provided by nix (environment.systemPackages).
+ *   Other: npm install && ./node_modules/.bin/agent-browser install
+ *   The nixos activation script symlinks this dir into ~/.pi/agent/extensions/.
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -24,7 +24,21 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const EXT_DIR = dirname(fileURLToPath(import.meta.url));
-const BIN = join(EXT_DIR, "node_modules", ".bin", "agent-browser");
+
+/**
+ * Resolve the agent-browser binary. Priority:
+ * 1. PATH (nix-installed agent-browser, wraps chromium automatically)
+ * 2. node_modules/.bin/ (npm fallback for non-NixOS setups)
+ */
+function findBin(): string {
+  try {
+    const p = execSync("command -v agent-browser", { encoding: "utf8", timeout: 3000 }).trim();
+    if (p) return p;
+  } catch { /* not on PATH */ }
+  return join(EXT_DIR, "node_modules", ".bin", "agent-browser");
+}
+
+const BIN = findBin();
 
 /**
  * Find the Chromium executable. Priority:

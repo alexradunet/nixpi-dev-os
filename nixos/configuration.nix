@@ -154,7 +154,9 @@
         # Dev-time JSDoc type checker for balaur; OS-provided so balaur stays dependency-free.
         typescript
 
-        # Browser for agent-browser pi extension (headless automation).
+        # Browser automation for the agent-browser pi extension.
+        # The nix wrapper sets AGENT_BROWSER_EXECUTABLE_PATH to chromium automatically.
+        agent-browser
         chromium
       ];
 
