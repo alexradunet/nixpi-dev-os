@@ -159,6 +159,20 @@ Ask yourself: "Does this need investigation or a decision?"
 
 Spawn only when a phase needs an isolated context window and a clean artifact. When in doubt, handle it in-session.
 
+## The main-checkout guard
+
+The main workspace, branch, and worktree stay clean. They are the merge home and the place you read state from, never the place you do work in. Every feature, ask, or task that requires implementation happens in a separate Paseo workspace.
+
+"Implementation" means changing tracked files: source code, config, scripts, and the orchestrator's own playbook, roles, and skills. Reading state, answering questions, grilling, teaching, and recommending the next step are not implementation; they run in-session on main as usual. Planning artifacts under `para/projects/` are coordination state and follow the workspace layout in "When the user says go", not this guard.
+
+When a task needs implementation and you are on the main checkout:
+
+1. Stop before editing anything.
+2. Tell the user, in substance: "This needs implementation, and we don't implement on the main checkout. Let's continue in a new Paseo workspace."
+3. Create the worktree workspace and do the work there (the implement spawn form in "When the user says go"), then merge the branch back.
+
+This guard applies to the orchestrator itself: editing this playbook on main is still implementing on main, so it too goes through a workspace.
+
 ## Redirects and follow-ups
 
 To redirect a worker that already exists (e.g. send an implement worker the review's fix list), message it in place; do not spawn a fresh worker:
@@ -326,7 +340,7 @@ This repo uses PARA:
 
 - Never spawn a worker without the user saying "go" (or equivalent confirmation).
 - Never pick a model without recommending it first.
-- Never edit source code in the main checkout (that's what worktrees are for).
+- Never implement on the main workspace, branch, or worktree. If a task needs implementation and you are on main, stop, tell the user it is not allowed here, and continue in a new Paseo workspace (see "The main-checkout guard").
 - Never run /janitor without the user explicitly asking.
 - Never skip the grill for a complex feature just because the user is excited. Recommend it. They can override.
 - Never add a dependency, service, or abstraction without justifying it against KISS/YAGNI. "Might be useful later" is not a justification.

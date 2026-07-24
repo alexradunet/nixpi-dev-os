@@ -76,7 +76,13 @@ In-session phases (grill, teach, janitor) have no role file; invoke their skills
 
 ## Testing
 
-The extension registers no tool and has no unit tests (the pure modules that backed the retired `subagent` tool were deleted with it in project 006). Verification is a runtime load smoke: load the extension explicitly and confirm pi starts and the hooks fire.
+The extension registers no tool. Its contract lives in `pi/orchestrator/orchestrator.test.ts`, which validates the role briefings, the skill directories, the worker-output schema, and the playbook (including the main-checkout guard). Run it with a single command:
+
+```bash
+node --experimental-strip-types --test pi/orchestrator/orchestrator.test.ts
+```
+
+Runtime verification is a load smoke: load the extension explicitly and confirm pi starts and the hooks fire.
 
 ```bash
 pi --no-extensions -e ./pi/orchestrator/index.ts -p --no-session --model qwen-token-plan/qwen3.6-flash --thinking off "Reply with exactly: ok"

@@ -110,3 +110,8 @@ test("playbook names every spawnable phase and still mentions explore (ad-hoc)",
 	}
 	assert.ok(/explore/i.test(pb), "playbook must still mention explore (ad-hoc)");
 });
+
+test("playbook enforces the main-checkout guard", () => {
+	const pb = read(path.join(EXT, "AGENTS.md"));
+	assert.ok(/main-checkout guard/i.test(pb), "playbook missing the main-checkout guard section");
+});
