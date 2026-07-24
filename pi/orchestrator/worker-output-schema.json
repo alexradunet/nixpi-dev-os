@@ -13,6 +13,11 @@
 		"summary": {
 			"type": "string",
 			"description": "One-paragraph summary of what was produced"
+		},
+		"flags": {
+			"type": "array",
+			"items": { "type": "string" },
+			"description": "Optional signals to the orchestrator: domain-term contradictions, shared blast radius, etc. Backward-compatible: workers that omit it still validate."
 		}
 	},
 	"required": ["status", "artifact_path", "summary"],
