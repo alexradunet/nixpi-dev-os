@@ -1,3 +1,4 @@
+import { StringDecoder } from "node:string_decoder";
 import type { Message } from "@earendil-works/pi-ai";
 import type { AgentConfig, AgentScope } from "./agents.ts";
 
@@ -36,4 +37,57 @@ export function decideProjectAgentGate(opts: {
 	if (projectAgents.length === 0) return { action: "proceed" };
 	if (!opts.hasUI) return { action: "reject", agents: projectAgents, dir: opts.projectAgentsDir };
 	return { action: "confirm", agents: projectAgents, dir: opts.projectAgentsDir };
+}
+
+/**
+ * Split a byte stream into lines, buffering incomplete UTF-8 multibyte
+ * sequences across chunk boundaries (Buffer.toString() per chunk would emit
+ * U+FFFD at boundaries). push() per chunk, flush() once at stream end.
+ */
+export function createLineSplit(onLine: (line: string) => void) {
+	const decoder = new StringDecoder("utf8");
+	let buffer = "";
+	return {
+		push(chunk: Buffer): void {
+			buffer += decoder.write(chunk);
+			const lines = buffer.split("\n");
+			buffer = lines.pop() || "";
+			for (const line of lines) onLine(line);
+		},
+		flush(): void {
+			const tail = buffer + decoder.end();
+			buffer = "";
+			if (tail.trim()) onLine(tail);
+		},
+	};
+}
+
+export const STDERR_CAP_BYTES = 64 * 1024;
+
+/**
+ * Cap accumulated stderr, keeping the TAIL (errors land at the end) and
+ * dropping the head with a marker. Byte-aware so the cut never splits a
+ * multibyte character.
+ */
+export function capStderr(stderr: string, cap: number = STDERR_CAP_BYTES): string {
+	const bytes = Buffer.byteLength(stderr, "utf8");
+	if (bytes <= cap) return stderr;
+	let tail = stderr.slice(-cap);
+	while (Buffer.byteLength(tail, "utf8") > cap) tail = tail.slice(1);
+	return `[stderr truncated: ${bytes - Buffer.byteLength(tail, "utf8")} bytes dropped from head]\n${tail}`;
+}
+
+
+/**
+ * Map a subprocess close event to an exit outcome. code === null means the
+ * process died by a signal (OOM killer, external pkill) - that is a failure,
+ * not exit 0. Intentional aborts are handled separately by the caller.
+ */
+export function resolveExitOutcome(
+	code: number | null,
+	signal: string | null,
+): { exitCode: number; errorMessage?: string } {
+	if (code !== null) return { exitCode: code };
+	if (signal) return { exitCode: 1, errorMessage: `Worker process killed by ${signal} (no exit code)` };
+	return { exitCode: 1, errorMessage: "Worker process exited with neither an exit code nor a signal" };
 }

@@ -13,6 +13,7 @@
  */
 
 import { spawn } from "node:child_process";
+import { StringDecoder } from "node:string_decoder";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -30,7 +31,7 @@ import {
 import { Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import { type AgentConfig, type AgentScope, discoverAgents } from "./agents.ts";
-import { decideProjectAgentGate } from "./core.ts";
+import { decideProjectAgentGate, resolveExitOutcome, createLineSplit, capStderr, STDERR_CAP_BYTES } from "./core.ts";
 
 const EXTENSION_DIR = path.dirname(fileURLToPath(import.meta.url));
 const SKILLS_DIR = path.join(EXTENSION_DIR, "skills");
@@ -250,10 +251,15 @@ async function mapWithConcurrencyLimit<TIn, TOut>(
 	return results;
 }
 
-async function writePromptToTempFile(agentName: string, prompt: string): Promise<{ dir: string; filePath: string }> {
-	const tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pi-subagent-"));
+async function writePromptToTempFile(
+	agentName: string,
+	prompt: string,
+	kind: "prompt" | "task",
+	existingDir: string | null = null,
+): Promise<{ dir: string; filePath: string }> {
+	const tmpDir = existingDir ?? (await fs.promises.mkdtemp(path.join(os.tmpdir(), "pi-subagent-")));
 	const safeName = agentName.replace(/[^\w.-]+/g, "_");
-	const filePath = path.join(tmpDir, `prompt-${safeName}.md`);
+	const filePath = path.join(tmpDir, `${kind}-${safeName}.md`);
 	await withFileMutationQueue(filePath, async () => {
 		await fs.promises.writeFile(filePath, prompt, { encoding: "utf-8", mode: 0o600 });
 	});
@@ -312,8 +318,8 @@ async function runSingleAgent(
 	if (agent.thinking) args.push("--thinking", agent.thinking);
 	if (agent.tools && agent.tools.length > 0) args.push("--tools", agent.tools.join(","));
 
-	let tmpPromptDir: string | null = null;
-	let tmpPromptPath: string | null = null;
+	let tmpDir: string | null = null;
+	const tmpFiles: string[] = [];
 
 	const currentResult: SingleResult = {
 		agent: agentName,
@@ -336,15 +342,21 @@ async function runSingleAgent(
 		}
 	};
 
-	try {
-		if (agent.systemPrompt.trim()) {
-			const tmp = await writePromptToTempFile(agent.name, agent.systemPrompt);
-			tmpPromptDir = tmp.dir;
-			tmpPromptPath = tmp.filePath;
-			args.push("--append-system-prompt", tmpPromptPath);
-		}
+		try {
+			if (agent.systemPrompt.trim()) {
+				const tmp = await writePromptToTempFile(agent.name, agent.systemPrompt, "prompt");
+				tmpDir = tmp.dir;
+				tmpFiles.push(tmp.filePath);
+				args.push("--append-system-prompt", tmp.filePath);
+			}
 
-		args.push(`Task: ${task}`);
+			// The task goes through a 0o600 temp file like the system prompt: argv is
+			// world-readable (ps, /proc/<pid>/cmdline), the task is not public. pi's
+			// @file positional includes the file contents in the initial message.
+			const taskFile = await writePromptToTempFile(agent.name, `Task: ${task}`, "task", tmpDir);
+			tmpDir = taskFile.dir;
+			tmpFiles.push(taskFile.filePath);
+			args.push(`@${taskFile.filePath}`);
 		let wasAborted = false;
 
 		const exitCode = await new Promise<number>((resolve) => {
@@ -355,9 +367,10 @@ async function runSingleAgent(
 				stdio: ["ignore", "pipe", "pipe"],
 				env: { ...process.env, NIXPI_WORKER: "1", NIXPI_SKILLS_DIR: SKILLS_DIR },
 			});
-			let buffer = "";
+			const lineSplit = createLineSplit(processLine);
+			const stderrDecoder = new StringDecoder("utf8");
 
-			const processLine = (line: string) => {
+			function processLine(line: string): void {
 				if (!line.trim()) return;
 				let event: any;
 				try {
@@ -392,25 +405,25 @@ async function runSingleAgent(
 					currentResult.messages.push(event.message as Message);
 					emitUpdate();
 				}
-			};
+			}
 
-			proc.stdout.on("data", (data) => {
-				buffer += data.toString();
-				const lines = buffer.split("\n");
-				buffer = lines.pop() || "";
-				for (const line of lines) processLine(line);
+			proc.stdout.on("data", (chunk: Buffer) => {
+				lineSplit.push(chunk);
 			});
 
-			proc.stderr.on("data", (data) => {
-				currentResult.stderr += data.toString();
+			proc.stderr.on("data", (chunk: Buffer) => {
+				currentResult.stderr = capStderr(currentResult.stderr + stderrDecoder.write(chunk));
 			});
 
-			proc.on("close", (code) => {
-				if (buffer.trim()) processLine(buffer);
-				resolve(code ?? 0);
+			proc.on("close", (code, signal) => {
+				lineSplit.flush();
+				const outcome = resolveExitOutcome(code, signal);
+				if (outcome.errorMessage) currentResult.errorMessage = outcome.errorMessage;
+				resolve(outcome.exitCode);
 			});
 
-			proc.on("error", () => {
+			proc.on("error", (err) => {
+				currentResult.errorMessage = `Failed to spawn worker: ${err.message}`;
 				resolve(1);
 			});
 
@@ -423,7 +436,10 @@ async function runSingleAgent(
 					}, 5000);
 				};
 				if (signal.aborted) killProc();
-				else signal.addEventListener("abort", killProc, { once: true });
+				else {
+					signal.addEventListener("abort", killProc, { once: true });
+					proc.on("close", () => signal.removeEventListener("abort", killProc));
+				}
 			}
 		});
 
@@ -431,15 +447,15 @@ async function runSingleAgent(
 		if (wasAborted) throw new Error("Subagent was aborted");
 		return currentResult;
 	} finally {
-		if (tmpPromptPath)
+		for (const f of tmpFiles)
 			try {
-				fs.unlinkSync(tmpPromptPath);
+				fs.unlinkSync(f);
 			} catch {
 				/* ignore */
 			}
-		if (tmpPromptDir)
+		if (tmpDir)
 			try {
-				fs.rmdirSync(tmpPromptDir);
+				fs.rmdirSync(tmpDir);
 			} catch {
 				/* ignore */
 			}
