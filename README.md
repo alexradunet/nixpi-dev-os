@@ -10,13 +10,13 @@ nixos/                                  NixOS system configuration (flake + modu
   configuration.nix                     SSH, fail2ban, firewall, user, locales, pi extension install
   hardware-configuration.nix            Host filesystems and kernel modules
 pi/                                     Pi extensions
-  orchestrator/                         Orchestration extension: subagent tool + skills + roles + playbook + registry template
-    index.ts                            subagent delegation tool; serves skills; injects the playbook
-    agents.ts                           Role discovery (bundled roles/ + user + project)
+  orchestrator/                         Orchestration extension: hooks only (skills + role briefings + playbook + registry template)
+    index.ts                            Hooks only: serves skills (resources_discover), injects the playbook (before_agent_start). Registers no tool.
     AGENTS.md                           Generalized orchestration playbook (injected via before_agent_start)
     model-registry-template.md          Seed template for a repo's para/resources/model-registry.md
+    worker-output-schema.json           JSON schema foreground paseo workers conform their final output to
     skills/                             Orchestration skills: grill, explore, plan, implement, review, teach, janitor
-    roles/                              Subagent roles for spawnable phases: explore, plan, implement, review
+    roles/                              Role briefings for spawnable phases: explore, plan, implement, review (consumed by the orchestrator to compose paseo run)
 ```
 
 ## Access
@@ -60,31 +60,26 @@ sudo nixos-rebuild switch --flake ./nixos
 
 ## The orchestrator extension (pi discovery)
 
-The orchestration ships as a single pi extension at `pi/orchestrator/` and is installed **globally** so it is available in every repository. On every rebuild, the activation script in `nixos/configuration.nix` (driven by `nixpi.extensionsPath` in `flake.nix`) symlinks it into pi's global instance:
+The orchestration ships as a single pi extension at `pi/orchestrator/` and is installed **globally** so it is available in every repository. It registers no tool; spawning workers is delegated to the Paseo daemon (see `para/resources/paseo-orchestration.md`). The extension only serves the skills and injects the playbook. On every rebuild, the activation script in `nixos/configuration.nix` (driven by `nixpi.extensionsPath` in `flake.nix`) symlinks it into pi's global instance:
 
 - `pi/*` → `~/.pi/agent/extensions/*`
 
 The extension bundles everything the orchestration needs and resolves it all relative to its own directory:
 
 - **Skills** (`orchestrator/skills/`) — served via `resources_discover`. User slash-commands (`/grill`, `/explore`, `/plan`, `/implement`, `/review`, `/teach`, `/janitor`); they carry `disable-model-invocation: true`, so they do not appear in the model's auto-invokable skill list.
-- **Roles** (`orchestrator/roles/`) — subagent definitions, one per spawnable phase (explore, plan, implement, review). The `subagent` tool discovers them from the bundled `roles/` directory (plus the user and project agent dirs) and runs each delegation as a one-shot `pi` subprocess, injecting `NIXPI_SKILLS_DIR` so the worker can read its skill.
+- **Roles** (`orchestrator/roles/`) — role briefings, one per spawnable phase (explore, plan, implement, review). The orchestrator reads a briefing and composes a `paseo run` invocation from it (provider, thinking, workspace from the frontmatter; the body is the worker prompt). Each briefing points the worker at its skill by absolute path.
 - **Playbook** (`orchestrator/AGENTS.md`) — the generalized "way of work", injected into the system prompt via `before_agent_start`. It composes with any repo-local `AGENTS.md`.
-- **Registry template** (`orchestrator/model-registry-template.md`) — seed for a repo's `para/resources/model-registry.md` (auto-created from `pi --list-models` on first use).
+- **Registry template** (`orchestrator/model-registry-template.md`) — seed for a repo's `para/resources/model-registry.md` (auto-created from `paseo provider ls` / `paseo provider models` on first use).
+- **Worker output schema** (`orchestrator/worker-output-schema.json`) — the JSON schema foreground workers (explore, plan, review) conform their final output to.
 
 In-session phases (grill, teach, janitor) have no role file; invoke their skills directly.
 
 ## Testing
 
-Unit tests (headless, no pi, no model calls):
+The extension registers no tool and has no unit tests (the pure modules that backed the retired `subagent` tool were deleted with it in project 006). Verification is a runtime load smoke: load the extension explicitly and confirm pi starts and the hooks fire.
 
 ```bash
-node --test "pi/orchestrator/*.test.ts"
+pi --no-extensions -e ./pi/orchestrator/index.ts -p --no-session --model qwen-token-plan/qwen3.6-flash --thinking off "Reply with exactly: ok"
 ```
 
-Requires Node ≥ 24 (native TypeScript type-stripping). The suite covers the pure core (`core.ts`: result classification, output caps, exit/signal outcome, the project-agent trust gate, stream line splitting, concurrency mapping) and the display formatters (`format.ts`). Subprocess and TUI code is not unit-tested; smoke-test it by loading the extension explicitly:
-
-```bash
-pi --no-extensions -e ./pi/orchestrator/index.ts -p --no-session "Reply with exactly: ok"
-```
-
-The extension is vendored from pi's official subagent example with local patches (thinking levels, worker nesting guard, bundled role discovery, skill serving, playbook injection, fail-closed headless gate); delegation itself is the integration test.
+The global symlink (`~/.pi/agent/extensions/orchestrator`) points at the main checkout, so testing a worktree's changes requires loading that copy explicitly with `-e <path> --no-extensions` (see `para/resources/lessons/smoke-testing-the-orchestrator.md`). Delegation itself (a real `paseo run`) is the integration test.

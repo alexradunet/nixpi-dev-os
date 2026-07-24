@@ -2,7 +2,7 @@
 
 The advisor's job doesn't end at the plan. This file covers two follow-through flows: keeping the plan backlog alive (`reconcile`) and publishing plans as GitHub issues (`--issues`).
 
-The founding rule survives unchanged: **the advisor never edits source code.** Implementation and review happen in spawned subagent workers (see `para/resources/subagent-orchestration.md`); merging stays the user's decision.
+The founding rule survives unchanged: **the advisor never edits source code.** Implementation and review happen in spawned Paseo workers (see `para/resources/paseo-orchestration.md`); merging stays the user's decision.
 
 ---
 

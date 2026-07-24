@@ -47,7 +47,16 @@ Move the entire project folder to `para/archive/`:
 mv para/projects/{project-id} para/archive/{project-id}
 ```
 
-### 5. Write a closure note
+### 5. Archive the Paseo workspace
+
+If the project ran implement or review in a Paseo worktree workspace, archive it so the worktree and its agents are cleaned up:
+
+    paseo workspace ls --json   # find the workspace whose cwd is the project's worktree (under ~/.paseo/worktrees/)
+    paseo workspace archive <workspace-id>
+
+Skip this if the project has no Paseo workspace (explore/plan-only projects run in the main checkout). Never `git worktree remove` a Paseo-managed worktree; archive the workspace and let Paseo clean up.
+
+### 6. Write a closure note
 
 Create `para/archive/{project-id}/CLOSURE.md`:
 

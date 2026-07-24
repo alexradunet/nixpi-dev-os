@@ -3,6 +3,8 @@
 From project `004-subagent-model-param` (2026-07-24). Two gotchas bit the live
 smoke tests; both recur whenever the extension is modified and tested.
 
+> **Update 2026-07-24 (project 006-paseo-orchestrator):** the `subagent` tool, the `NIXPI_WORKER`/`NIXPI_SKILLS_DIR` env vars, and the worker nesting guard were all deleted; the extension is now hooks-only. Gotcha #2 below is therefore retired (there is no guard to trip and no worker env to strip). Gotcha #1 still applies: the global symlink loads the main checkout, so test a worktree's changes with `-e <path> --no-extensions`.
+
 ## What happened
 
 1. **The global symlink loads the main checkout, not your worktree.**
