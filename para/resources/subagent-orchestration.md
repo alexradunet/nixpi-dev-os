@@ -8,6 +8,10 @@ The `subagent` tool (a patched copy of pi's official example at `pi/orchestrator
 
 Workers spawn with `NIXPI_WORKER=1` in their environment; the extension factory skips registering the spawner tool when that var is set (no nesting), but still serves the skills and injects the playbook, so workers get the methodology. The tool also injects `NIXPI_SKILLS_DIR` into the worker env.
 
+Since project `005-harness-review` (2026-07-24) the extension is split into modules: `core.ts` (pure logic — gate decision, exit-outcome resolution, encoding-safe line splitting, output truncation; no pi runtime imports; unit-tested), `spawn.ts` (subprocess lifecycle), `render.ts` (TUI), `format.ts` (usage/tool-call formatting), and `index.ts` (entrypoint that wires the tool). Tests run headless via `node --test "pi/orchestrator/*.test.ts"` (the directory form is broken on Node 24 — see `resources/lessons/node-test-directory-form-broken.md`).
+
+The project-agent confirmation gate fails closed: a headless session (no UI) requesting `agentScope` `both`/`project` agents with the default `confirmProjectAgents: true` gets an `isError` refusal rather than running repo-controlled agents unconfirmed. Pass `confirmProjectAgents: false` to opt out (trusted repositories only). The task is delivered via a `0o600` `@file` temp file, not argv, so it does not leak via `ps`.
+
 ## Spawnable vs in-session
 
 The filesystem is the contract: a phase is spawnable **iff** its role file exists in the extension's `roles/`.
@@ -60,12 +64,9 @@ Drop `{name}.md` into `pi/orchestrator/roles/` and rebuild. The tool discovers i
 
 ## Maintenance
 
-On pi version bumps, diff `pi/orchestrator/` against the new store's example and re-apply the four local patches (they must stay the only behavioral diff):
+On pi version bumps, diff `pi/orchestrator/` against the new store's example and reconcile by hand. The extension has diverged well beyond a thin patch set since project 005: it is split into `core/spawn/render/format/index`, adds the fail-closed project-agent gate and `@file` task delivery, and carries a headless test suite. The original upstream-relative patches were: `agents.ts` `thinking` support + bundled `roles/` discovery; `--thinking` passthrough + `NIXPI_WORKER`/`NIXPI_SKILLS_DIR` spawn env (now in `spawn.ts`); the factory nesting guard; and `resources_discover`/`before_agent_start` skill + playbook serving (in `index.ts`). Treat those as the minimum behavioral contract to preserve; everything else is ours.
 
-1. `agents.ts` — `thinking` frontmatter support; bundled `roles/` discovery (`"bundled"` source via `import.meta.url`).
-2. `index.ts` — pass `--thinking <level>`; set `NIXPI_WORKER=1` and `NIXPI_SKILLS_DIR` in the spawn env.
-3. `index.ts` — factory nesting guard (tool only; hooks still run in workers).
-4. `index.ts` — `resources_discover` serves bundled `skills/`; `before_agent_start` injects the bundled `AGENTS.md` playbook.
+The pure seam is the invariant: `core.ts` and `format.ts` must keep zero runtime imports from `@earendil-works/*` and `typebox`, or the headless suite (`node --test "pi/orchestrator/*.test.ts"`) stops running under bare node. Reviewers should reject any such import in those two files.
 
 ## Why this shape
 
