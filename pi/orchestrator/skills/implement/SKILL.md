@@ -14,11 +14,14 @@ Before any edit, verify your working environment:
 1. Run `git worktree list` and confirm you are in a non-main worktree.
 2. Run `git branch --show-current` and confirm it is not `main`.
 3. Run `git status --porcelain` and stop if unexpected dirty files exist.
-4. **Stop immediately** if you are in the main checkout, the branch is wrong, or the worktree is dirty.
+4. If a ticket is assigned (the prompt names it), read `para/projects/{project-id}/tickets/NN-slug.md` and confirm its `status` is `ready` and every entry in `blocked-by` is `done`. Stop if the ticket is not ready.
+5. **Stop immediately** if you are in the main checkout, the branch is wrong, the worktree is dirty, or the ticket is blocked.
 
 ## Protocol
 
 - Follow the plan **step by step, in order**.
+- Write code test-first. Read `~/.pi/agent/extensions/orchestrator/skills/tdd/SKILL.md` and follow it. For each step, run the red-green loop: identify the seam (from the spec's Testing Decisions), RED (write a failing test at that seam), GREEN (write the minimal code to pass), VERIFY (run the test and confirm green), then commit the test and implementation together. No implementation-coupled, tautological, or horizontal-slice tests.
+- Flag domain drift, do not edit it. If a term contradicts `CONTEXT.md` or a concept deserves a glossary entry, add a `## Domain flags` section at the end of the artifact. Never edit `CONTEXT.md` yourself.
 - Run every verification command and confirm the expected result before moving on.
 - Touch only the files listed as in scope. Any out-of-scope file is a **hard stop**.
 - If any STOP condition occurs, stop immediately and report — do not improvise.
@@ -30,7 +33,7 @@ Before any edit, verify your working environment:
 
 After completing (or stopping), write an implementation summary:
 
-**Path:** `para/projects/{project-id}/impl-{YYYY-MM-DD}.md`
+**Path:** When implementing a ticket, write to the ticket-relative path `para/projects/{project-id}/tickets/NN-slug-impl.md`. For a plan-only implement (no ticket), fall back to `para/projects/{project-id}/impl-{YYYY-MM-DD}.md`.
 
 **Format:**
 
@@ -39,6 +42,7 @@ After completing (or stopping), write an implementation summary:
 phase: implement
 status: done | stopped
 project: {project-id}
+ticket: {NN}
 date: {YYYY-MM-DD}
 plan: {plan filename}
 commit: {short SHA}
