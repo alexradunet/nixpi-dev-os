@@ -500,7 +500,7 @@ export default function (pi: ExtensionAPI) {
 			"Modes: single (agent + task), parallel (tasks array), chain (sequential with {previous} placeholder).",
 			`Default agent scope is "user" (from ${path.join(getAgentDir(), "agents")}).`,
 			`To enable project-local agents in ${CONFIG_DIR_NAME}/agents, set agentScope: "both" (or "project").`,
-			"Each single call, parallel task, and chain step accepts an optional `model` override (provider/model; valid values from `pi --list-models`). A non-empty override beats the role's frontmatter model; empty or whitespace falls back to it. Values are passed straight to `pi --model`, which errors on a bad value.",
+			"Each single call, parallel task, and chain step accepts an optional `model` override (provider/model; valid values from `pi --list-models`). A non-empty override beats the role's frontmatter model; empty or whitespace falls back to it. Values are passed straight to `pi --model`; a bad value is forwarded unchanged and the provider rejects it (`model_not_found`), surfacing as a tool error (`isError=true`).",
 		].join(" "),
 		parameters: SubagentParams,
 
