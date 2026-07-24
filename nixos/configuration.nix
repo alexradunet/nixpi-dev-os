@@ -153,6 +153,9 @@
         gh
         # Dev-time JSDoc type checker for balaur; OS-provided so balaur stays dependency-free.
         typescript
+
+        # Browser for agent-browser pi extension (headless automation).
+        chromium
       ];
 
       # Symlink all pi extensions from nixpi.extensionsPath into pi's global
