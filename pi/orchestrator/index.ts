@@ -3,9 +3,9 @@
  *
  * Serves the orchestration skills (resources_discover) and injects the
  * orchestration playbook (before_agent_start) into every session, workers
- * included. Worker spawning is delegated to the Paseo daemon (see
- * para/resources/paseo-orchestration.md); this extension registers no tool,
- * so there is no worker-nesting guard and no NIXPI_* env machinery.
+ * included. Worker spawning is delegated to the Paseo daemon; this extension
+ * registers no tool, so there is no worker-nesting guard and no NIXPI_* env
+ * machinery.
  */
 
 import * as fs from "node:fs";
