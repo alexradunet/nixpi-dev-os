@@ -111,6 +111,11 @@
         "flakes"
       ];
 
+      # trusted-users lets the flake's nixConfig.extra-substituters (numtide
+      # binary cache, flake.nix) apply without per-build acceptance. No new
+      # privilege on this box: the user already has passwordless sudo.
+      nix.settings.trusted-users = [ cfg.username ];
+
       environment.sessionVariables = {
         PI_SKIP_VERSION_CHECK = "1";
         PI_TELEMETRY = "0";
@@ -154,6 +159,13 @@
         if [ "$USER" = "${cfg.username}" ]; then
           ext_dst="$HOME/.pi/agent/extensions"
           mkdir -p "$ext_dst"
+          # Prune stale symlinks left by previous activations: a renamed or
+          # removed extension otherwise keeps a dangling link here, and pi tries
+          # to load it (para/resources/lessons/stale-global-symlinks-after-rename.md).
+          # Only broken symlinks are removed — valid links and real dirs survive.
+          for link in "$ext_dst"/*; do
+            [ -L "$link" ] && [ ! -e "$link" ] && rm -f "$link"
+          done
           for dir in "${cfg.extensionsPath}"/*/; do
             [ -f "$dir/index.ts" ] || continue
             name="$(basename "$dir")"

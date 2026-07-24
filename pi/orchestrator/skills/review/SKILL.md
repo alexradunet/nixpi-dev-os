@@ -48,6 +48,8 @@ Write your review artifact with a clear verdict.
 
 **Path:** `para/projects/{project-id}/review-{YYYY-MM-DD}.md`
 
+For multi-model panels, suffix the filename with the model: `review-{YYYY-MM-DD}-{model}.md` (one file per reviewer, so panels don't overwrite each other).
+
 **Format:**
 
 ```markdown

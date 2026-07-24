@@ -43,3 +43,4 @@ Spawned phases (delegated via the `subagent` tool; model comes from the role's f
 - The orchestrator recommends; the user always confirms before spawn.
 - If a model's status is `exhausted` or `removed`, the orchestrator falls back to the next model in the same tier.
 - Multi-model review panels should use models from different providers when possible (reduces correlated blind spots).
+- A bundled role's frontmatter `model` is the floor for that phase, not the recommendation: `roles/review.md` ships at premium tier even though the phase-defaults table lists mid. The registry governs what the orchestrator recommends; the role governs what runs when nobody overrides.
