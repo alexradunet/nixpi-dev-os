@@ -234,7 +234,7 @@ It blocks until the worker finishes and returns the structured summary (`status`
 
 **implement (background, new worktree workspace):**
 
-Confirm the plan and prior artifacts are **committed**, then create the worktree workspace and spawn in the background (read the field names from the `--json` output; they are `workspaceId` and `id` as of paseo 0.2.0-beta.4):
+Confirm the plan and prior artifacts are **committed**, then create the worktree workspace and spawn in the background (read the field names from the `--json` output; they are `workspaceId` and `agentId` as of paseo 0.2.0-beta.4):
 
 ```
 WS=$(paseo workspace create --isolation worktree --mode branch-off \
@@ -243,7 +243,7 @@ WS=$(paseo workspace create --isolation worktree --mode branch-off \
 
 ID=$(paseo run --background --workspace "$WS" \
   --provider <provider/model> --thinking <level> \
-  "<composed briefing>" | python3 -c 'import json,sys;print(json.load(sys.stdin)["id"])')
+  "<composed briefing>" | python3 -c 'import json,sys;print(json.load(sys.stdin)["agentId"])')
 ```
 
 Then either block on it (`paseo wait "$ID"`) or free the session with a self-heartbeat so you report back when the worker lands:

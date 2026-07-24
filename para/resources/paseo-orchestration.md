@@ -53,4 +53,4 @@ CLI: `run` (`--background`, `--wait-timeout`, `--output-schema`, `--provider`, `
 
 ## Maintenance
 
-On paseo version bumps, re-verify the CLI flags above (`paseo <cmd> --help`) and the `--json` field names the playbook relies on (`workspaceId`, agent `id`, inspect `Cwd`/`Status`). If pi-native subagents are ever wanted again, install an existing community extension; we do not maintain our own spawn tool.
+On paseo version bumps, re-verify the CLI flags above (`paseo <cmd> --help`) and the `--json` field names the playbook relies on (`workspaceId`, agent `agentId`, inspect `Cwd`/`Status`). If pi-native subagents are ever wanted again, install an existing community extension; we do not maintain our own spawn tool.
