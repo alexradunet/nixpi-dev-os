@@ -65,8 +65,16 @@ In-session phases (grill, teach, janitor) have no role file; invoke their skills
 
 ## Testing
 
+Unit tests (headless, no pi, no model calls):
+
+```bash
+node --test pi/orchestrator/
+```
+
+Requires Node ≥ 24 (native TypeScript type-stripping). The suite covers the pure core (`core.ts`: result classification, output caps, exit/signal outcome, the project-agent trust gate, stream line splitting, concurrency mapping) and the display formatters (`format.ts`). Subprocess and TUI code is not unit-tested; smoke-test it by loading the extension explicitly:
+
 ```bash
 pi --no-extensions -e ./pi/orchestrator/index.ts -p --no-session "Reply with exactly: ok"
 ```
 
-The extension is vendored from pi's official subagent example with local patches (thinking levels, worker nesting guard, bundled role discovery, skill serving, playbook injection); the real test is delegation itself.
+The extension is vendored from pi's official subagent example with local patches (thinking levels, worker nesting guard, bundled role discovery, skill serving, playbook injection, fail-closed headless gate); delegation itself is the integration test.
