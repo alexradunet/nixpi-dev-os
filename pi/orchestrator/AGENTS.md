@@ -184,7 +184,7 @@ Spawnable phases (delegated via the `subagent` tool, which discovers roles from 
 1. Read `para/resources/model-registry.md` for the recommended model. If it does not exist, seed it first (next section).
 2. Recommend the model based on task complexity:
    - "I'd use qwen3.8-max-preview (top tier) for this plan — heavy design tradeoffs. OK?"
-3. The user confirms or overrides. The model lives in the role's frontmatter; if the user overrides, edit the role file before delegating.
+3. The user confirms or overrides. The role's frontmatter model is the default; if the user overrides, pass `model` in the delegation (the `subagent` tool accepts it on single calls, each parallel task, and each chain step) — a non-empty value beats the frontmatter, no file edit needed.
 4. For `implement` only: confirm the plan and prior artifacts are **committed**, then create the worktree next to the current repo: `git worktree add ../<repo-dir>-{NNN}-{slug} -b {NNN}-{slug}` (where `<repo-dir>` is the basename of the current repo root).
 5. Delegate via the `subagent` tool: `agent` = role name, `task` = the project context (idea, prior artifacts, artifact path contract). Pass `cwd` = worktree path for implement and review; leave it unset for explore and plan (main checkout).
 6. Tell the user: "Delegated. Progress streams into the subagent tool call; I'll read the artifact when it returns."

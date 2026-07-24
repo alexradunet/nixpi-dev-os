@@ -34,6 +34,16 @@ ssh -p 22222 -L 8080:localhost:8080 balaur@<host-ip>   # local forward
 ssh -p 22222 -R 9090:localhost:3000 balaur@<host-ip>   # remote forward
 ```
 
+### Security decisions
+
+- **Passwordless sudo for wheel** (`security.sudo.wheelNeedsPassword = false`):
+  deliberate dev convenience on a single-user box. With key-only SSH, a leaked
+  key yields passwordless root — the accepted tradeoff here; the mitigation is
+  key hygiene (per-device keys, rotate on loss), not a sudo password.
+- **SSH port forwarding enabled** (`AllowTcpForwarding = "yes"`): intentional;
+  forwarding is the documented service-access mechanism above. Narrow to
+  `local` only if remote (`-R`) forwards stop being needed.
+
 ## Applying the NixOS configuration
 
 ```bash
@@ -68,7 +78,7 @@ In-session phases (grill, teach, janitor) have no role file; invoke their skills
 Unit tests (headless, no pi, no model calls):
 
 ```bash
-node --test pi/orchestrator/
+node --test "pi/orchestrator/*.test.ts"
 ```
 
 Requires Node ≥ 24 (native TypeScript type-stripping). The suite covers the pure core (`core.ts`: result classification, output caps, exit/signal outcome, the project-agent trust gate, stream line splitting, concurrency mapping) and the display formatters (`format.ts`). Subprocess and TUI code is not unit-tested; smoke-test it by loading the extension explicitly:
