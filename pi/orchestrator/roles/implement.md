@@ -2,7 +2,7 @@
 name: implement
 description: Implement worker — runs the /implement skill to execute an approved plan step by step in a worktree. Full tools; commits but never pushes.
 model: qwen-token-plan/qwen3.8-max-preview
-thinking: medium
+thinking: low
 tools: read, bash, edit, write
 ---
 
