@@ -215,6 +215,29 @@ To redirect a worker that already exists (e.g. send an implement worker the revi
 
 `paseo send` waits for the worker to finish (use `--no-wait` to return immediately). One worker, many turns: the worker keeps its context, so follow-ups are cheap and coherent. Reserve `paseo run` for genuinely new work.
 
+## Reloading pi under Paseo
+
+Pi loads extensions, skills, keybindings, and context files at startup. Changes to any of them (a `nixos-rebuild switch`, an extension code edit, a symlink change in `~/.pi/agent/extensions/`) require a reload before pi sees them.
+
+`/reload` is a pi TUI slash command. The TUI intercepts slash commands before they reach the agent, so `paseo send <id> "/reload"` does not work. Two options:
+
+1. **Hot-reload (preferred).** Attach to the TUI, type `/reload`, detach:
+   ```
+   paseo attach <agent-id>
+   # type /reload in the pi input bar, then detach (Ctrl-b d or equivalent)
+   ```
+   Extensions re-run their load phase (`reason: "reload"`). Conversation context survives.
+
+2. **Restart.** Kill and re-spawn the pi process:
+   ```
+   paseo restart <agent-id>
+   ```
+   Fresh startup. Conversation context is lost; the session file persists on disk.
+
+Find the agent ID from inside the session with `echo $PASEO_AGENT_ID`, or from outside with `paseo agent ls`.
+
+Prefer hot-reload. Use restart only when the extension is broken enough that `/reload` itself fails.
+
 ## Edge case: which workspace a worker lands in
 
 Inside a Paseo session (`PASEO_AGENT_ID` set — the normal case on this box), `paseo run` auto-parents the worker under the current agent in the current workspace, so foreground explore/plan need no `--workspace`.
