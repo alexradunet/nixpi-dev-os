@@ -68,6 +68,7 @@ These apply to every project on this system. They are not style preferences — 
 These apply to all prose: artifacts, commit messages, docs, reviews, PR descriptions.
 
 - Cut filler: "in order to" → "to", "due to the fact that" → "because". Delete "it is important to note that".
+- Telegraphic when meaning survives. Drop articles and connectors for brevity; grammar serves concision, not the reverse. The Orwell floor below still holds.
 - No clichés or idioms: "pushes the boundaries", "paradigm shift", "state of the art", "leverage", "circle back", "get the ball rolling". Use plain, literal words.
 - Active voice when the agent is known. "The service logs errors" not "errors are logged by the service".
 - Concrete over abstract. Name the number, the file, the mechanism. Not "various factors".
