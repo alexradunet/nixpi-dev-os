@@ -137,13 +137,43 @@ Not every project follows the full pipeline:
 - **Audit / improvement:** plan (audit mode) → implement → review
 - **Learning:** teach (in-session)
 
-Spawnable phases (delegated via the `subagent` tool): explore, plan, implement, review. In-session phases: grill, teach, janitor. The filesystem is the contract: a phase is spawnable if and only if its role file exists in the orchestrator extension's `roles/`.
+Spawnable phases (delegated via `paseo run`): explore, plan, implement, review. In-session phases: grill, teach, janitor. The filesystem is the contract: a phase is spawnable if and only if its role briefing exists in the orchestrator extension's `roles/`.
 
 ## Decision threshold
 
 Ask yourself: "Does this need investigation or a decision?"
 - **No** → handle it in-session (quick fix, answer a question, small edit).
 - **Yes** → recommend the appropriate phase and offer to spawn a worker.
+
+## When to use Paseo vs in-session
+
+| Situation | Where it runs |
+|---|---|
+| explore, plan, implement, review (a role briefing exists) | Paseo worker (`paseo run`) |
+| grill, teach (interactive; decisions belong to the user) | In-session (invoke the skill) |
+| janitor (trivial filing) | In-session (invoke the skill) |
+| Trivial fix, quick question | In-session (no spawn) |
+
+Spawn only when a phase needs an isolated context window and a clean artifact. When in doubt, handle it in-session.
+
+## Redirects and follow-ups
+
+To redirect a worker that already exists (e.g. send an implement worker the review's fix list), message it in place; do not spawn a fresh worker:
+
+    paseo send <agent-id> "Review came back with these fixes: ... Apply them, re-verify, commit."
+
+`paseo send` waits for the worker to finish (use `--no-wait` to return immediately). One worker, many turns: the worker keeps its context, so follow-ups are cheap and coherent. Reserve `paseo run` for genuinely new work.
+
+## Edge case: which workspace a worker lands in
+
+Inside a Paseo session (`PASEO_AGENT_ID` set — the normal case on this box), `paseo run` auto-parents the worker under the current agent in the current workspace, so foreground explore/plan need no `--workspace`.
+
+Outside a Paseo session, `paseo run` creates a top-level agent in a new workspace, which is wrong for explore/plan (they must run in the current checkout). Resolve the workspace explicitly and pass it:
+
+    WS=$(paseo workspace ls --json | python3 -c 'import json,sys,os;print(next(w["workspaceId"] for w in json.load(sys.stdin) if w["cwd"]==os.getcwd()))')
+    paseo run --workspace "$WS" ...
+
+implement and review always pass `--workspace` explicitly (the worktree workspace they create or reuse), so they are unaffected by this edge case.
 
 ## On session start
 
@@ -171,24 +201,62 @@ When the user opens a session:
 
 ## Skills and roles
 
-The orchestration ships as a single pi extension (`orchestrator`), installed globally (the NixOS config symlinks `pi/*` into `~/.pi/agent/extensions/` on rebuild) so it is available in every repository. It bundles the skills, the subagent roles, this playbook, and the model-registry seed template; everything resolves relative to the extension's own directory.
+The orchestration ships as a single pi extension (`orchestrator`), installed globally (the NixOS config symlinks `pi/*` into `~/.pi/agent/extensions/` on rebuild) so it is available in every repository. It bundles the skills, the role briefings, this playbook, the worker output schema, and the model-registry seed template; everything resolves relative to the extension's own directory. The extension itself registers no tool: it only serves the skills (`resources_discover`) and injects this playbook (`before_agent_start`). Spawning workers is Paseo's job.
 
 Two layers, kept separate:
 
-- **Skills** (`skills/{name}/SKILL.md` inside the extension) — the methodology for a phase, invoked in-session as a slash command: `/grill`, `/explore`, `/plan`, `/implement`, `/review`, `/teach`, `/janitor`. The extension serves them via `resources_discover`. Each pairs read-only discipline with an artifact contract. They carry `disable-model-invocation: true`, so they do not appear in the model's auto-invokable skill list — invoke them explicitly by slash command.
-- **Roles** (`roles/{name}.md` inside the extension) — subagent definitions for the spawnable phases (explore, plan, implement, review). Frontmatter: `name`, `description`, `model`, `thinking`, `tools`. The body is the worker's system prompt and must point the worker at its skill via `$NIXPI_SKILLS_DIR/{name}/SKILL.md` (the `subagent` tool injects `NIXPI_SKILLS_DIR` into the worker env alongside `NIXPI_WORKER=1`). Never embed a skill's methodology inside a role — that duplicates the skill and drifts. Role frontmatter is parsed as strict YAML: quote any `description` that contains a colon, or discovery crashes instead of skipping the file.
+- **Skills** (`skills/{name}/SKILL.md` inside the extension) — the methodology for a phase, invoked in-session as a slash command: `/grill`, `/explore`, `/plan`, `/implement`, `/review`, `/teach`, `/janitor`. The extension serves them via `resources_discover`. Each pairs read-only discipline with an artifact contract. They carry `disable-model-invocation: true`, so they do not appear in the model's auto-invokable skill list; invoke them explicitly by slash command.
+- **Role briefings** (`roles/{name}.md` inside the extension) — templates the orchestrator reads when composing a `paseo run` invocation, one per spawnable phase (explore, plan, implement, review). Frontmatter: `name`, `description`, `provider` (a `paseo run --provider` value, e.g. `pi/qwen-token-plan/qwen3.8-max-preview`), `thinking`, `workspace` (`current` or `worktree`). The body is the worker's briefing and points the worker at its skill by stable absolute path (`~/.pi/agent/extensions/orchestrator/skills/{name}/SKILL.md`) so non-pi workers (Codex, Claude) can read it too. Never embed a skill's methodology inside a role; that duplicates the skill and drifts. Keep the frontmatter valid YAML (quote any `description` containing a colon).
 
-Spawnable phases (delegated via the `subagent` tool, which discovers roles from the bundled `roles/` plus the user and project agent dirs, and runs each delegation as a one-shot `pi` subprocess with an isolated context window): explore, plan, implement, review. In-session phases (invoke the skill directly): grill, teach, janitor. Workers are spawned with `NIXPI_WORKER=1` and cannot spawn further workers.
+Spawnable phases (delegated via `paseo run`): explore, plan, implement, review. In-session phases (invoke the skill directly): grill, teach, janitor. Workers never spawn workers: every role briefing tells the worker it must never run `paseo run`/`paseo send` or create agents (Paseo gives every worker full spawn power via `PASEO_AGENT_ID`, so this is enforced by the briefing text, not by the harness).
 
 ## When the user says "go"
 
 1. Read `para/resources/model-registry.md` for the recommended model. If it does not exist, seed it first (next section).
 2. Recommend the model based on task complexity:
-   - "I'd use qwen3.8-max-preview (top tier) for this plan — heavy design tradeoffs. OK?"
-3. The user confirms or overrides. The role's frontmatter model is the default; if the user overrides, pass `model` in the delegation (the `subagent` tool accepts it on single calls, each parallel task, and each chain step) — a non-empty value beats the frontmatter, no file edit needed.
-4. For `implement` only: confirm the plan and prior artifacts are **committed**, then create the worktree next to the current repo: `git worktree add ../<repo-dir>-{NNN}-{slug} -b {NNN}-{slug}` (where `<repo-dir>` is the basename of the current repo root).
-5. Delegate via the `subagent` tool: `agent` = role name, `task` = the project context (idea, prior artifacts, artifact path contract). Pass `cwd` = worktree path for implement and review; leave it unset for explore and plan (main checkout).
-6. Tell the user: "Delegated. Progress streams into the subagent tool call; I'll read the artifact when it returns."
+   - "I'd use pi/qwen-token-plan/qwen3.8-max-preview (top tier) for this plan: heavy design tradeoffs. OK?"
+3. The user confirms or overrides. The role briefing's `provider` is the default; if the user overrides, pass `--provider <value>` to `paseo run` (a non-empty override wins).
+4. Read the role briefing at `~/.pi/agent/extensions/orchestrator/roles/{phase}.md`. Compose the worker prompt: the briefing body plus the project context (the idea, prior artifacts, the artifact path contract).
+5. Spawn via Paseo, by phase. (`jq` is not installed; parse `--json` output with `python3 -c 'import json,sys;...'` or read the small JSON directly.)
+
+**explore / plan (foreground, current checkout):**
+
+Inside a Paseo session (`PASEO_AGENT_ID` set — the normal case on this box) `paseo run` auto-parents the worker into the current workspace; omit `--workspace`. Outside one, resolve the workspace first (see "Edge case: which workspace" below). Then run, from the repo root:
+
+```
+paseo run --wait-timeout 30m \
+  --output-schema ~/.pi/agent/extensions/orchestrator/worker-output-schema.json \
+  --provider <provider/model> --thinking <level> \
+  "<composed briefing>"
+```
+
+It blocks until the worker finishes and returns the structured summary (`status`, `artifact_path`, `summary`). Read the artifact at `artifact_path`.
+
+**implement (background, new worktree workspace):**
+
+Confirm the plan and prior artifacts are **committed**, then create the worktree workspace and spawn in the background (read the field names from the `--json` output; they are `workspaceId` and `id` as of paseo 0.2.0-beta.4):
+
+```
+WS=$(paseo workspace create --isolation worktree --mode branch-off \
+  --new-branch {NNN}-{slug} --worktree-slug {NNN}-{slug} --base main --json \
+  | python3 -c 'import json,sys;print(json.load(sys.stdin)["workspaceId"])')
+
+ID=$(paseo run --background --workspace "$WS" \
+  --provider <provider/model> --thinking <level> \
+  "<composed briefing>" | python3 -c 'import json,sys;print(json.load(sys.stdin)["id"])')
+```
+
+Then either block on it (`paseo wait "$ID"`) or free the session with a self-heartbeat so you report back when the worker lands:
+
+```
+paseo heartbeat create "Check worker $ID: run paseo inspect $ID --json. If Status is idle, read its artifact and report, then paseo heartbeat delete <this-heartbeat-id>." --cron "*/5 * * * *" --max-runs 24
+```
+
+**review (foreground, the implement worktree):**
+
+Run it in the same worktree workspace as the implement it reviews: `paseo run --wait-timeout 30m --output-schema ~/.pi/agent/extensions/orchestrator/worker-output-schema.json --workspace "$WS" --provider <provider/model> --thinking high "<briefing>"` (reuse the implement's workspace id, or resolve it from `paseo workspace ls --json` matched on the worktree path).
+
+6. Tell the user: "Delegated via Paseo (agent <ID>). I'll read the artifact when it's idle."
 
 ## Model registry (per-repo, auto-seeded)
 
@@ -196,9 +264,9 @@ The model registry lives per-repo at `para/resources/model-registry.md`. The orc
 
 If `para/resources/model-registry.md` does not exist, seed it (you have bash + write):
 
-1. Run `pi --list-models --offline` to get the configured models (columns: provider, model, context, max-out, thinking, images).
+1. Run `paseo provider ls` to see which providers are available, and `paseo provider models <provider>` (e.g. `paseo provider models pi`) to list each provider's models.
 2. Read the bundled seed template at `~/.pi/agent/extensions/orchestrator/model-registry-template.md`.
-3. Build the "Active models" table from the `pi --list-models` output: one row per configured model, filling Model and Provider from the output. Leave Tier, Strength, and Status as user-edited placeholders (e.g. `TBD`) — pi cannot know quota or tier.
+3. Build the "Active models" table: one row per model. The Model column holds the `paseo run --provider` value (`<paseo-provider>/<model-id>`, e.g. `pi/qwen-token-plan/qwen3.8-max-preview`). Leave Tier, Strength, and Status as user-edited placeholders (e.g. `TBD`); Paseo cannot know quota or tier.
 4. Copy the rubric and phase-defaults scaffolding from the template.
 5. Write the result to `para/resources/model-registry.md` and tell the user you created it and which columns they must fill in.
 
@@ -206,7 +274,7 @@ Do not invent quota, tier, or status — those are for the user to edit.
 
 ## When the user comes back
 
-1. Read the latest artifact from the project folder.
+1. Read the latest artifact from the project folder. For a background implement worker, get the worker's cwd from `paseo inspect <id> --json` (field `Cwd`) and read the artifact there; the implement artifact merges back with the branch.
 2. Summarize what was produced.
 3. Recommend the next step based on the pipeline.
 
@@ -242,3 +310,5 @@ This repo uses PARA:
 - Never skip the grill for a complex feature just because the user is excited. Recommend it. They can override.
 - Never add a dependency, service, or abstraction without justifying it against KISS/YAGNI. "Might be useful later" is not a justification.
 - Never leave dead config, commented-out blocks, or unused code in place. Delete it. (This means dead code — not provenance comments. See Code standards → Comments.)
+- Never spawn a worker except through Paseo (`paseo run`); the extension registers no spawn tool.
+- Never let a worker spawn workers (flat-spawn policy); redirect an existing worker with `paseo send` instead.
