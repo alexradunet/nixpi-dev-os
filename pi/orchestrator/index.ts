@@ -30,6 +30,7 @@ import {
 import { Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import { type AgentConfig, type AgentScope, discoverAgents } from "./agents.ts";
+import { decideProjectAgentGate } from "./core.ts";
 
 const EXTENSION_DIR = path.dirname(fileURLToPath(import.meta.url));
 const SKILLS_DIR = path.join(EXTENSION_DIR, "skills");
@@ -471,7 +472,7 @@ const SubagentParams = Type.Object({
 	chain: Type.Optional(Type.Array(ChainItem, { description: "Array of {agent, task} for sequential execution" })),
 	agentScope: Type.Optional(AgentScopeSchema),
 	confirmProjectAgents: Type.Optional(
-		Type.Boolean({ description: "Prompt before running project-local agents. Default: true.", default: true }),
+		Type.Boolean({ description: "Prompt before running project-local agents. Default: true. Headless sessions (no UI) fail closed instead of prompting; pass false to run project agents unconfirmed (trusted repositories only).", default: true }),
 	),
 	cwd: Type.Optional(Type.String({ description: "Working directory for the agent process (single mode)" })),
 	model: Type.Optional(Type.String({ description: "Model override for single mode (provider/model; valid values from `pi --list-models`). Empty or whitespace falls back to the role's model." })),
@@ -500,6 +501,7 @@ export default function (pi: ExtensionAPI) {
 			"Modes: single (agent + task), parallel (tasks array), chain (sequential with {previous} placeholder).",
 			`Default agent scope is "user" (from ${path.join(getAgentDir(), "agents")}).`,
 			`To enable project-local agents in ${CONFIG_DIR_NAME}/agents, set agentScope: "both" (or "project").`,
+			"Headless sessions cannot confirm project-local agents: with agentScope \"both\" or \"project\" and confirmProjectAgents at its default (true), the call fails closed (isError). Pass confirmProjectAgents: false to run them unconfirmed (trusted repositories only).",
 			"Each single call, parallel task, and chain step accepts an optional `model` override (provider/model; valid values from `pi --list-models`). A non-empty override beats the role's frontmatter model; empty or whitespace falls back to it. Values are passed straight to `pi --model`; a bad value is forwarded unchanged and the provider rejects it (`model_not_found`), surfacing as a tool error (`isError=true`).",
 		].join(" "),
 		parameters: SubagentParams,
@@ -537,29 +539,47 @@ export default function (pi: ExtensionAPI) {
 				};
 			}
 
-			if ((agentScope === "project" || agentScope === "both") && confirmProjectAgents && ctx.hasUI) {
-				const requestedAgentNames = new Set<string>();
-				if (params.chain) for (const step of params.chain) requestedAgentNames.add(step.agent);
-				if (params.tasks) for (const t of params.tasks) requestedAgentNames.add(t.agent);
-				if (params.agent) requestedAgentNames.add(params.agent);
+			const requestedAgentNames: string[] = [];
+			if (params.chain) for (const step of params.chain) requestedAgentNames.push(step.agent);
+			if (params.tasks) for (const t of params.tasks) requestedAgentNames.push(t.agent);
+			if (params.agent) requestedAgentNames.push(params.agent);
 
-				const projectAgentsRequested = Array.from(requestedAgentNames)
-					.map((name) => agents.find((a) => a.name === name))
-					.filter((a): a is AgentConfig => a?.source === "project");
+			const gate = decideProjectAgentGate({
+				agentScope,
+				confirmProjectAgents,
+				hasUI: ctx.hasUI,
+				requestedAgentNames,
+				agents,
+				projectAgentsDir: discovery.projectAgentsDir,
+			});
 
-				if (projectAgentsRequested.length > 0) {
-					const names = projectAgentsRequested.map((a) => a.name).join(", ");
-					const dir = discovery.projectAgentsDir ?? "(unknown)";
-					const ok = await ctx.ui.confirm(
-						"Run project-local agents?",
-						`Agents: ${names}\nSource: ${dir}\n\nProject agents are repo-controlled. Only continue for trusted repositories.`,
-					);
-					if (!ok)
-						return {
-							content: [{ type: "text", text: "Canceled: project-local agents not approved." }],
-							details: makeDetails(hasChain ? "chain" : hasTasks ? "parallel" : "single")([]),
-						};
-				}
+			if (gate.action === "reject") {
+				const names = gate.agents.map((a) => a.name).join(", ");
+				const dir = gate.dir ?? "(unknown)";
+				return {
+					content: [
+						{
+							type: "text",
+							text: `Refused: project-local agents (${names}) from ${dir} require confirmation and this session has no UI. To run them unconfirmed, pass confirmProjectAgents: false (trusted repositories only).`,
+						},
+					],
+					details: makeDetails(hasChain ? "chain" : hasTasks ? "parallel" : "single")([]),
+					isError: true,
+				};
+			}
+
+			if (gate.action === "confirm") {
+				const names = gate.agents.map((a) => a.name).join(", ");
+				const dir = gate.dir ?? "(unknown)";
+				const ok = await ctx.ui.confirm(
+					"Run project-local agents?",
+					`Agents: ${names}\nSource: ${dir}\n\nProject agents are repo-controlled. Only continue for trusted repositories.`,
+				);
+				if (!ok)
+					return {
+						content: [{ type: "text", text: "Canceled: project-local agents not approved." }],
+						details: makeDetails(hasChain ? "chain" : hasTasks ? "parallel" : "single")([]),
+					};
 			}
 
 			if (params.chain && params.chain.length > 0) {
