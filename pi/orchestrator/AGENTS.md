@@ -125,19 +125,22 @@ Read only the first and last line of the response. They must tell the reader (a)
 ## The pipeline
 
 ```
-idea → grill → plan → implement → review → (janitor when project closes)
-         ↑                                    |
-         └── explore (for bugs) ──────────────┘
+grill (in-session, absorbs explore)
+  → spec → domain-model → plan → tickets        (sequential, spawned, current checkout)
+    → implement × N → review-standards × N      (parallel per ticket, spawned, worktrees)
+      → integrate (conditional)                  (merge ticket branches; see orchestration loop)
+        → review-feature (spawned, two-axis)
+          → domain-model-close (spawned, reconcile mode)
 ```
 
 Not every project follows the full pipeline:
-- **New feature / heavy refactor:** grill → plan → implement → review
-- **Bug:** explore → plan (fix) → implement → review
-- **Trivial fix:** just fix it in-session. No project folder, no spawn.
-- **Audit / improvement:** plan (audit mode) → implement → review
-- **Learning:** teach (in-session)
+- **New feature / heavy refactor:** the full pipeline.
+- **Bug:** grill (with root-cause investigation) → spec → … (same downstream).
+- **Trivial fix:** fix in-session; no project folder, no spawn.
+- **Audit / improvement:** plan (audit mode) → implement → review-standards.
+- **Learning:** teach (in-session).
 
-Spawnable phases (delegated via `paseo run`): explore, plan, implement, review. In-session phases: grill, teach, janitor. The filesystem is the contract: a phase is spawnable if and only if its role briefing exists in the orchestrator extension's `roles/`.
+Spawnable phases (a role briefing exists in `roles/`): spec, domain-model, plan, tickets, implement, review-standards, review-feature. In-session phases: grill, teach, janitor. `explore` survives as an ad-hoc skill outside the pipeline (its role briefing was removed); `tdd` is a reference skill read by implement, never spawned.
 
 ## Decision threshold
 
@@ -149,7 +152,7 @@ Ask yourself: "Does this need investigation or a decision?"
 
 | Situation | Where it runs |
 |---|---|
-| explore, plan, implement, review (a role briefing exists) | Paseo worker (`paseo run`) |
+| spec, domain-model, plan, tickets, implement, review-standards, review-feature (a role briefing exists) | Paseo worker (`paseo run`) |
 | grill, teach (interactive; decisions belong to the user) | In-session (invoke the skill) |
 | janitor (trivial filing) | In-session (invoke the skill) |
 | Trivial fix, quick question | In-session (no spawn) |
@@ -205,10 +208,12 @@ The orchestration ships as a single pi extension (`orchestrator`), installed glo
 
 Two layers, kept separate:
 
-- **Skills** (`skills/{name}/SKILL.md` inside the extension) — the methodology for a phase, invoked in-session as a slash command: `/grill`, `/explore`, `/plan`, `/implement`, `/review`, `/teach`, `/janitor`. The extension serves them via `resources_discover`. Each pairs read-only discipline with an artifact contract. They carry `disable-model-invocation: true`, so they do not appear in the model's auto-invokable skill list; invoke them explicitly by slash command.
-- **Role briefings** (`roles/{name}.md` inside the extension) — templates the orchestrator reads when composing a `paseo run` invocation, one per spawnable phase (explore, plan, implement, review). Frontmatter: `name`, `description`, `provider` (a `paseo run --provider` value, e.g. `pi/qwen-token-plan/qwen3.8-max-preview`), `thinking`, `workspace` (`current` or `worktree`). The body is the worker's briefing and points the worker at its skill by stable absolute path (`~/.pi/agent/extensions/orchestrator/skills/{name}/SKILL.md`) so non-pi workers (Codex, Claude) can read it too. Never embed a skill's methodology inside a role; that duplicates the skill and drifts. Keep the frontmatter valid YAML (quote any `description` containing a colon).
+- **Skills** (`skills/{name}/SKILL.md` inside the extension) — the methodology for a phase, invoked in-session as a slash command: `/grill`, `/spec`, `/domain-model`, `/plan`, `/tickets`, `/implement`, `/review`, `/explore`, `/tdd`, `/teach`, `/janitor`. The extension serves them via `resources_discover`. Each pairs read-only discipline with an artifact contract. They carry `disable-model-invocation: true`, so they do not appear in the model's auto-invokable skill list; invoke them explicitly by slash command.
+- **Role briefings** (`roles/{name}.md` inside the extension) — templates the orchestrator reads when composing a `paseo run` invocation, one per spawnable phase (spec, domain-model, plan, tickets, implement, review-standards, review-feature). Frontmatter: `name`, `description`, `provider` (a `paseo run --provider` value, e.g. `pi/qwen-token-plan/qwen3.8-max-preview`), `thinking`, `workspace` (`current` or `worktree`). The body is the worker's briefing and points the worker at its skill by stable absolute path (`~/.pi/agent/extensions/orchestrator/skills/{name}/SKILL.md`) so non-pi workers (Codex, Claude) can read it too. Never embed a skill's methodology inside a role; that duplicates the skill and drifts. Keep the frontmatter valid YAML (quote any `description` containing a colon).
 
-Spawnable phases (delegated via `paseo run`): explore, plan, implement, review. In-session phases (invoke the skill directly): grill, teach, janitor. Workers never spawn workers: every role briefing tells the worker it must never run `paseo run`/`paseo send` or create agents (Paseo gives every worker full spawn power via `PASEO_AGENT_ID`, so this is enforced by the briefing text, not by the harness).
+Spawnable phases (a role briefing exists in `roles/`): spec, domain-model, plan, tickets, implement, review-standards, review-feature. In-session phases (invoke the skill directly): grill, teach, janitor. Workers never spawn workers: every role briefing tells the worker it must never run `paseo run`/`paseo send` or create agents (Paseo gives every worker full spawn power via `PASEO_AGENT_ID`, so this is enforced by the briefing text, not by the harness).
+
+Every role briefing composition includes the domain-model instruction: read `CONTEXT.md` if it exists, use its vocabulary, and add contradictory or new terms to a `## Domain flags` section in the artifact — never edit `CONTEXT.md`.
 
 ## When the user says "go"
 
@@ -219,7 +224,7 @@ Spawnable phases (delegated via `paseo run`): explore, plan, implement, review. 
 4. Read the role briefing at `~/.pi/agent/extensions/orchestrator/roles/{phase}.md`. Compose the worker prompt: the briefing body plus the project context (the idea, prior artifacts, the artifact path contract).
 5. Spawn via Paseo, by phase. (`jq` is not installed; parse `--json` output with `python3 -c 'import json,sys;...'` or read the small JSON directly.)
 
-**explore / plan (foreground, current checkout):**
+**spec / domain-model / plan / tickets (foreground, current checkout):**
 
 Inside a Paseo session (`PASEO_AGENT_ID` set — the normal case on this box) `paseo run` auto-parents the worker into the current workspace; omit `--workspace`. Outside one, resolve the workspace first (see "Edge case: which workspace" below). Then run, from the repo root:
 
@@ -230,7 +235,7 @@ paseo run --wait-timeout 30m \
   "<composed briefing>"
 ```
 
-It blocks until the worker finishes and returns the structured summary (`status`, `artifact_path`, `summary`). Read the artifact at `artifact_path`.
+It blocks until the worker finishes and returns the structured summary (`status`, `artifact_path`, `summary`). Read the artifact at `artifact_path`. Run these four in order; each reads the artifact the phase before it wrote.
 
 **implement (background, new worktree workspace):**
 
@@ -252,9 +257,23 @@ Then either block on it (`paseo wait "$ID"`) or free the session with a self-hea
 paseo heartbeat create "Check worker $ID: run paseo inspect $ID --json. If Status is idle, read its artifact and report, then paseo heartbeat delete <this-heartbeat-id>." --cron "*/5 * * * *" --max-runs 24
 ```
 
-**review (foreground, the implement worktree):**
+Implement runs once per ticket, driven by the orchestration loop below.
 
-Run it in the same worktree workspace as the implement it reviews: `paseo run --wait-timeout 30m --output-schema ~/.pi/agent/extensions/orchestrator/worker-output-schema.json --workspace "$WS" --provider <provider/model> --thinking high "<briefing>"` (reuse the implement's workspace id, or resolve it from `paseo workspace ls --json` matched on the worktree path).
+**review-standards (foreground, the ticket worktree):**
+
+Run it in the same worktree workspace as the implement it reviews: `paseo run --wait-timeout 30m --output-schema ~/.pi/agent/extensions/orchestrator/worker-output-schema.json --workspace "$WS" --provider <provider/model> --thinking high "<briefing>"` (reuse the implement's workspace id, or resolve it from `paseo workspace ls --json` matched on the worktree path). `review-feature` uses the same foreground form on the assembled feature's workspace.
+
+**Parallel implement orchestration loop:**
+
+After `tickets` exists, the orchestrator drives implement and review per ticket:
+
+1. Scan `para/projects/{NNN}/tickets/*.md`; parse each ticket's `status` and `blocked-by`. The **frontier** = tickets whose `status` is `ready` and whose blockers are all `done`.
+2. If any ticket has `shared-blast-radius: true`, create one integration branch `{NNN}-{slug}` and branch every ticket off it; otherwise branch each ticket off `main` as `{NNN}-{slug}/ticket-{NN}`.
+3. For each frontier ticket: create its worktree workspace, set `worker` and `branch` in the ticket frontmatter, set `status: in-progress`, and spawn an implement worker in the background (the implement spawn form above). Update the ticket to `status: review` when its worker lands.
+4. For each ticket that reaches `review`: spawn a `review-standards` worker in that ticket's worktree. On `verdict: approved`, set the ticket `status: done`; on `changes-requested`, `paseo send` the fix list to the implement worker (do not spawn a new one) and re-review.
+5. Repeat 1–4 until every ticket is `done`.
+6. **Integrate**: if an integration branch was used, the final integrate-and-verify ticket (emitted by the tickets worker) merges and tests end-to-end. If independent branches were used, merge each ticket branch to `main` and run the suite; stop and report on conflict (human resolves).
+7. Spawn `review-feature` (two-axis) on the assembled feature, then `domain-model` in `reconcile` mode (domain-model-close).
 
 6. Tell the user: "Delegated via Paseo (agent <ID>). I'll read the artifact when it's idle."
 
@@ -312,3 +331,5 @@ This repo uses PARA:
 - Never leave dead config, commented-out blocks, or unused code in place. Delete it. (This means dead code — not provenance comments. See Code standards → Comments.)
 - Never spawn a worker except through Paseo (`paseo run`); the extension registers no spawn tool.
 - Never let a worker spawn workers (flat-spawn policy); redirect an existing worker with `paseo send` instead.
+- Never spawn an implement worker for a ticket whose blockers are not all done.
+- Never edit a ticket's frontmatter `status` by hand to skip the frontier — the frontier is computed from the files.
