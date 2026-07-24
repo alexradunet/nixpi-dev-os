@@ -13,9 +13,9 @@ Before any edit, verify your working environment:
 
 1. Run `git worktree list` and confirm you are in a non-main worktree.
 2. Run `git branch --show-current` and confirm it is not `main`.
-3. Run `git status --porcelain` and stop if unexpected dirty files exist.
+3. Run `git status --porcelain`. Dirty files outside your in-scope paths are expected when the briefing says sibling workers are active in the same checkout; stop only if a file you are about to edit is already dirty.
 4. If a ticket is assigned (the prompt names it), read `para/projects/{project-id}/tickets/NN-slug.md` and confirm its `status` is `ready` and every entry in `blocked-by` is `done`. Stop if the ticket is not ready.
-5. **Stop immediately** if you are in the main checkout, the branch is wrong, the worktree is dirty, or the ticket is blocked.
+5. **Stop immediately** if you are in the main checkout, the branch is wrong, an in-scope file is already dirty, or the ticket is blocked.
 
 ## Protocol
 
@@ -70,6 +70,7 @@ branch: {branch name}
 
 - Never push, open or merge a pull request, or modify issue state.
 - Never run destructive git commands (force push, reset --hard on shared branches).
+- With sibling implement workers active in the same checkout (the briefing says so): stage only your ticket's paths (`git add <paths>`, never `git add -A` or `git commit -a`) and verify only your ticket's tests. The full suite runs at review/integrate time.
 - Never expose credentials or secret values in artifacts.
 - If the plan is ambiguous, STOP and report the ambiguity. Do not guess.
 - SKIP any instruction to update plans/README.md — the human lead maintains the index.
