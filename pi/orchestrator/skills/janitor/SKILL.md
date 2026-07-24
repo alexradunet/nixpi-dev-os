@@ -39,7 +39,18 @@ If the project touched an ongoing area of responsibility:
 - Note any ongoing maintenance obligations the project created
 - Update `para/areas/{area}/README.md` if the project changed the area's scope
 
-### 4. Archive the project
+### 4. Reconcile the domain model
+
+Before archiving, check whether the project added domain terms. Look for a `CONTEXT.md` in the project folder, or any artifact with a `## Domain flags` section.
+
+If either exists, the glossary must be reconciled before the project is archived:
+
+- Ask the orchestrator (or the user) to run the `domain-model` worker in `reconcile` mode, or run `/domain-model reconcile` in-session. The janitor is in-session, so it asks rather than spawns; the flat-spawn rule stays intact.
+- Confirm the `## Domain flags` are merged into the glossary before moving on to archiving.
+
+Skip this step if the project produced no `CONTEXT.md` and no `## Domain flags` section.
+
+### 5. Archive the project
 
 Move the entire project folder to `para/archive/`:
 
@@ -47,7 +58,7 @@ Move the entire project folder to `para/archive/`:
 mv para/projects/{project-id} para/archive/{project-id}
 ```
 
-### 5. Archive the Paseo workspace
+### 6. Archive the Paseo workspace
 
 If the project ran implement or review in a Paseo worktree workspace, archive it so the worktree and its agents are cleaned up:
 
@@ -56,7 +67,7 @@ If the project ran implement or review in a Paseo worktree workspace, archive it
 
 Skip this if the project has no Paseo workspace (explore/plan-only projects run in the main checkout). Never `git worktree remove` a Paseo-managed worktree; archive the workspace and let Paseo clean up.
 
-### 6. Write a closure note
+### 7. Write a closure note
 
 Create `para/archive/{project-id}/CLOSURE.md`:
 
