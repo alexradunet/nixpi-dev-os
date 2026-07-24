@@ -1,0 +1,19 @@
+{
+  "name": "pi-agent-browser",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "postinstall": "node scripts/patch-browser.mjs"
+  },
+  "dependencies": {
+    "agent-browser": "^0.1.0"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "allowScripts": {
+    "agent-browser@0.1.3": true
+  }
+}
