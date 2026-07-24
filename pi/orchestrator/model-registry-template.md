@@ -26,16 +26,20 @@ The orchestrator reads this file to recommend models for each task phase.
 | Phase | Default tier | Fallback |
 |-------|-------------|----------|
 | grill | premium | mid |
-| explore | mid | budget |
+| spec | premium | mid |
+| domain-model (bootstrap) | mid | budget |
 | plan (feature) | premium | mid |
 | plan (fix) | mid | budget |
 | plan (audit) | premium | mid |
+| tickets | premium | mid |
 | implement | mid | budget |
-| review | mid | premium (for security/architecture) |
+| review-standards | mid | budget |
+| review-feature | premium | mid |
+| domain-model (reconcile / close) | mid | budget |
 | teach | mid | premium (for deep topics) |
 | janitor | budget | mid |
 
-Spawned phases (delegated via `paseo run`; model comes from the role briefing's `provider` field): explore, plan, implement, review. In-session phases (run on the orchestrator's own model): grill, teach, janitor.
+Spawned phases (delegated via `paseo run`; model comes from the role briefing's `provider` field): spec, domain-model, plan, tickets, implement, review-standards, review-feature. In-session phases (run on the orchestrator's own model): grill, teach, janitor. `integrate` is a ticket (or an orchestrator merge), not a spawned phase. `explore` is ad-hoc, outside the pipeline.
 
 ## Notes
 
