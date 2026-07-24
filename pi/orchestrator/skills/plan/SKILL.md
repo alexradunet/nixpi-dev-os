@@ -26,7 +26,8 @@ You figure out what kind of plan to write from the project folder. Read `para/pr
 
 | Artifacts present | Plan type | Input |
 |---|---|---|
-| `grill-*.md` with `status: done` | **Feature plan** | Grill summary → decisions, constraints, scope |
+| `spec.md` with `status: done` | **Feature plan** | Spec → requirements, seams, implementation decisions |
+| `grill-*.md` with `status: done` | **Feature plan** | Grill summary → decisions, constraints, scope (fallback when there is no `spec.md`) |
 | `explore-*.md` with `status: done` | **Fix plan** | Root cause, evidence, recommended direction |
 | No prior artifacts + "audit" request | **Improvement plan** | Codebase survey → prioritized findings |
 | No prior artifacts + direct description | **Direct plan** | User's description → investigate → specify |
@@ -49,7 +50,8 @@ Map the territory before planning:
 
 ### Phase 2 — Analyze
 
-**For feature plans** (grill summary input):
+**For feature plans** (spec or grill summary input):
+- When a spec exists, it is the primary input: focus the plan on architecture (modules, interfaces, schema, API contracts, testing strategy — the "how"), and do not produce a work breakdown (that is the tickets phase). The spec's Testing Decisions section is the testing-strategy source.
 - Read the grill summary's decisions, constraints, and "explicitly ruled out" list.
 - Investigate the codebase to understand where the feature fits: existing patterns to follow, integration points, affected files.
 - Identify the smallest complete implementation that satisfies the grill decisions.
