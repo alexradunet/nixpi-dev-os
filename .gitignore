@@ -1,3 +1,6 @@
 # Local test/runtime state — never commit
 node_modules/
 *.log
+
+# Nix build artifact (nix build --print-out-paths symlink)
+result
