@@ -1,0 +1,20 @@
+{
+	"type": "object",
+	"properties": {
+		"status": {
+			"type": "string",
+			"enum": ["done", "stopped", "blocked"],
+			"description": "done: artifact written; stopped: halted on a STOP condition; blocked: cannot proceed"
+		},
+		"artifact_path": {
+			"type": "string",
+			"description": "Absolute path to the artifact file this worker wrote"
+		},
+		"summary": {
+			"type": "string",
+			"description": "One-paragraph summary of what was produced"
+		}
+	},
+	"required": ["status", "artifact_path", "summary"],
+	"additionalProperties": false
+}
