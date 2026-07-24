@@ -1,0 +1,10 @@
+{
+  "name": "pi-agent-browser",
+  "version": "0.2.0",
+  "private": true,
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

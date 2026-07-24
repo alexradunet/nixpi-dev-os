@@ -153,6 +153,11 @@
         gh
         # Dev-time JSDoc type checker for balaur; OS-provided so balaur stays dependency-free.
         typescript
+
+        # Browser automation for the agent-browser pi extension.
+        # The nix wrapper sets AGENT_BROWSER_EXECUTABLE_PATH to chromium automatically.
+        agent-browser
+        chromium
       ];
 
       # Symlink all pi extensions from nixpi.extensionsPath into pi's global
